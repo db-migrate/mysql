@@ -1,0 +1,33 @@
+{
+  "name": "db-migrate-mysql",
+  "version": "1.0.0",
+  "description": "db-migrate mysql driver",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/db-migrate/mysql.git"
+  },
+  "keywords": [
+    "db-migrate",
+    "db",
+    "database",
+    "migrate",
+    "migration",
+    "database",
+    "driver"
+  ],
+  "author": "Tobias Gurtzick <magic@wizardtales.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/db-migrate/mysql/issues"
+  },
+  "homepage": "https://github.com/db-migrate/mysql",
+  "dependencies": {
+    "db-migrate-base": "^1.0.1",
+    "moment": "^2.9.0",
+    "mysql": "^2.5.4"
+  }
+}
