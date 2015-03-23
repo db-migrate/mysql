@@ -4,6 +4,9 @@ var mysql = require('mysql');
 var Base = require('db-migrate-base');
 var log = global.mod.log;
 var type = global.mod.type;
+var Promise = require('bluebird');
+
+var internals = {};
 
 var MysqlDriver = Base.extend({
   init: function(connection) {
