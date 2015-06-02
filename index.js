@@ -10,6 +10,8 @@ var internals = {};
 
 var MysqlDriver = Base.extend({
   init: function(connection) {
+    this._escapeDDL = '`';
+    this._escapeString = '\'';
     this._super(internals);
     this.connection = connection;
   },
@@ -135,6 +137,8 @@ var MysqlDriver = Base.extend({
 
       if (typeof spec.defaultValue === 'string'){
         constraint.push("'" + spec.defaultValue + "'");
+      } else if (spec.defaultValue === null) {
+        constraint.push('NULL');
       } else {
         constraint.push(spec.defaultValue);
       }
@@ -198,28 +202,30 @@ var MysqlDriver = Base.extend({
 
     var sql = util.format('CREATE TABLE %s `%s` (%s%s)', ifNotExistsSql, tableName, columnDefs.join(', '), pkSql);
 
-    this.runSql(sql, function()
+    return this.runSql(sql)
+    .then(function()
     {
 
-        this.recurseCallbackArray(foreignKeys, callback);
-    }.bind(this));
+        return this.recurseCallbackArray(foreignKeys);
+    }.bind(this)).nodeify(callback);
   },
 
   renameTable: function(tableName, newTableName, callback) {
     var sql = util.format('RENAME TABLE `%s` TO `%s`', tableName, newTableName);
-    this.runSql(sql, callback);
+    return this.runSql(sql).nodeify(callback);
   },
 
   addColumn: function(tableName, columnName, columnSpec, callback) {
-    var def = this.createColumnDef(columnName, this.normalizeColumnSpec(columnSpec), tableName);
+    var def = this.createColumnDef(columnName, this.normalizeColumnSpec(columnSpec), {}, tableName);
     var sql = util.format('ALTER TABLE `%s` ADD COLUMN %s', tableName, def.constraints);
-    this.runSql(sql, function()
+    this.runSql(sql)
+    .then(function()
     {
       if(def.foreignKey)
-        def.foreignKey(callback);
+        return def.foreignKey();
       else
-        callback();
-    });
+        return Promise.resolve();
+    }).nodeify(callback);
   },
 
   createDatabase: function(dbName, options, callback) {
@@ -268,7 +274,8 @@ var MysqlDriver = Base.extend({
 
   removeColumn: function(tableName, columnName, callback) {
     var sql = util.format('ALTER TABLE `%s` DROP COLUMN `%s`', tableName, columnName);
-    this.runSql(sql, callback);
+
+    return this.runSql(sql).nodeify(callback);
   },
 
   addIndex: function(tableName, indexName, columns, unique, callback) {
@@ -281,7 +288,7 @@ var MysqlDriver = Base.extend({
       columns = [columns];
     }
     var sql = util.format('ALTER TABLE `%s` ADD %s INDEX `%s` (`%s`)', tableName, (unique ? 'UNIQUE ' : ''), indexName, columns.join('`, `'));
-    this.runSql(sql, callback);
+    return this.runSql(sql).nodeify(callback);
   },
 
   insert: function(tableName, columnNameArray, valueArray, callback) {
@@ -309,7 +316,7 @@ var MysqlDriver = Base.extend({
     }
 
     sql += columnNames + ') '+ values + ');';
-    this.runSql(sql, callback);
+    return this.runSql(sql).nodeify(callback);
   },
 
   removeIndex: function(tableName, indexName, callback) {
@@ -324,7 +331,8 @@ var MysqlDriver = Base.extend({
     }
 
     var sql = util.format('DROP INDEX `%s` ON `%s`', indexName, tableName);
-    this.runSql(sql, callback);
+
+    return this.runSql(sql).nodeify(callback);
   },
 
   dropTable: function(tableName, options, callback) {
@@ -338,17 +346,20 @@ var MysqlDriver = Base.extend({
       ifExistsSql = 'IF EXISTS';
     }
     var sql = util.format('DROP TABLE %s `%s`', ifExistsSql, tableName);
-    this.runSql(sql, callback);
+
+    return this.runSql(sql).nodeify(callback);
   },
 
   renameColumn: function(tableName, oldColumnName, newColumnName, callback) {
     var self = this, columnTypeSql = util.format("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '%s' AND COLUMN_NAME = '%s'", tableName, oldColumnName);
 
-    this.all(columnTypeSql, function(err, result) {
+    return this.runSql(columnTypeSql)
+    .then(function(result) {
       var columnType = result[0].COLUMN_TYPE;
       var alterSql = util.format("ALTER TABLE `%s` CHANGE `%s` `%s` %s", tableName, oldColumnName, newColumnName, columnType);
-      self.runSql(alterSql, callback);
-    });
+
+      return self.runSql(alterSql);
+    }).nodeify(callback);
   },
 
   changeColumn: function(tableName, columnName, columnSpec, callback) {
@@ -357,24 +368,31 @@ var MysqlDriver = Base.extend({
 
     var exec = function() {
 
-      this.runSql(sql, function()
+      return this.runSql(sql)
+      .then(function()
       {
         if(constraint.foreignKey)
-          constraint.foreignKey(callback);
+          return constraint.foreignKey();
         else
-          callback();
-      });
+          return Promise.resolve();
+      }).nodeify(callback);
     }.bind(this);
 
     if(columnSpec.unique === false)
-      this.removeIndex(tableName, columnName, exec);
+      return this.removeIndex(tableName, columnName)
+      .then(exec);
     else
-      exec();
+      return exec();
   },
 
   addMigrationRecord: function (name, callback) {
     var formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
     this.runSql('INSERT INTO `' + internals.migrationTable + '` (`name`, `run_on`) VALUES (?, ?)', [name, formattedDate], callback);
+  },
+
+  addSeedRecord: function (name, callback) {
+    var formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+    this.runSql('INSERT INTO `' + internals.seedTable + '` (`name`, `run_on`) VALUES (?, ?)', [name, formattedDate], callback);
   },
 
   addForeignKey: function(tableName, referencedTableName, keyName, fieldMapping, rules, callback) {
@@ -385,48 +403,42 @@ var MysqlDriver = Base.extend({
     var columns = Object.keys(fieldMapping);
     var referencedColumns = columns.map(function (key) { return fieldMapping[key]; });
     var sql = util.format('ALTER TABLE `%s` ADD CONSTRAINT `%s` FOREIGN KEY (%s) REFERENCES `%s` (%s) ON DELETE %s ON UPDATE %s',
-      tableName, keyName, this.tableQuoteArr( columns ), referencedTableName,
-      this.tableQuoteArr( referencedColumns ), rules.onDelete || 'NO ACTION', rules.onUpdate || 'NO ACTION');
-    this.runSql(sql, callback);
+      tableName, keyName, this.quoteDDLArr( columns ), referencedTableName,
+      this.quoteDDLArr( referencedColumns ), rules.onDelete || 'NO ACTION', rules.onUpdate || 'NO ACTION');
+
+    return this.runSql(sql).nodeify(callback);
   },
 
   removeForeignKey: function(tableName, keyName, options, callback) {
     var sql = util.format('ALTER TABLE `%s` DROP FOREIGN KEY `%s`', tableName, keyName);
-    this.runSql(sql, function () {
+
+    return this.runSql(sql)
+    .then(function () {
 
       if( typeof(options) === 'function' ) {
 
-          options();
+          return Promise.resolve().nodeify(options);
       }
       else if(options.dropIndex === true) {
 
         sql = util.format('ALTER TABLE `%s` DROP INDEX `%s`', tableName, keyName);
-        this.runSql(sql, function () {
-          callback();
-        });
+        return this.runSql(sql);
       }
       else
-        callback();
+        return Promise.resolve().nodeify(callback);
 
-    }.bind(this));
-  },
-
-  tableQuoteArr: function(arr) {
-
-      for(var i = 0; i < arr.length; ++i)
-        arr[i] = '`' + arr[i] + '`';
-
-      return arr;
+    }.bind(this)).nodeify(callback);
   },
 
   runSql: function() {
 
     var self = this;
     var args = this._makeParamArgs(arguments);
+
     var callback = args.pop();
     log.sql.apply(null, arguments);
     if(internals.dryRun) {
-      return callback();
+      return Promise.resolve().nodeify(callback);
     }
 
     return new Promise(function(resolve, reject) {
@@ -454,32 +466,19 @@ var MysqlDriver = Base.extend({
     return this.connection.query.apply(this.connection, args);
   },
 
-  /**
-   * Queries the migrations table
-   *
-   * @param callback
-   */
-  allLoadedMigrations: function(callback) {
-    var sql = 'SELECT * FROM `' + internals.migrationTable + '` ORDER BY run_on DESC, name DESC';
-    this.all(sql, callback);
-  },
-
-  /**
-   * Deletes a migration
-   *
-   * @param migrationName   - The name of the migration to be deleted
-   * @param callback
-   */
-  deleteMigration: function(migrationName, callback) {
-    var sql = 'DELETE FROM `' + internals.migrationTable + '` WHERE name = ?';
-    this.runSql(sql, [migrationName], callback);
-  },
-
   close: function(callback) {
-    this.connection.end(callback);
+    return new Promise(function(resolve, reject) {
+      var cb = (function(err, data) {
+        return (err ? reject(err) : resolve(data));
+      });
+
+      this.connection.end(cb);
+    }.bind(this)).nodeify(callback);
   }
 
 });
+
+Promise.promisifyAll(MysqlDriver);
 
 exports.connect = function(config, intern, callback) {
   var db;
