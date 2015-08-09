@@ -20,7 +20,7 @@ var MysqlDriver = Base.extend({
 
     var self = this;
 
-    if(!internals.notansactions) {
+    if(!internals.notransactions) {
 
       return this.runSql('SET AUTOCOMMIT=0;')
              .then(function() {
@@ -128,6 +128,10 @@ var MysqlDriver = Base.extend({
       constraint.push('ROW_FORMAT=\'' + spec.rowFormat + '\'')
     }
 
+    if (spec.onUpdate && spec.onUpdate === 'CURRENT_TIMESTAMP') {
+      constraint.push('ON UPDATE CURRENT_TIMESTAMP')
+    }
+
     if (spec.null || spec.notNull === false) {
       constraint.push('NULL');
     }
@@ -136,7 +140,12 @@ var MysqlDriver = Base.extend({
       constraint.push('DEFAULT');
 
       if (typeof spec.defaultValue === 'string'){
-        constraint.push("'" + spec.defaultValue + "'");
+        if(spec.defaultValue === 'CURRENT_TIMESTAMP') {
+          constraint.push(spec.defaultValue);
+        }
+        else {
+          constraint.push("'" + spec.defaultValue + "'");
+        }
       } else if (spec.defaultValue === null) {
         constraint.push('NULL');
       } else {
@@ -152,80 +161,10 @@ var MysqlDriver = Base.extend({
     return { foreignKey: cb, constraints: constraint.join(' ') };
   },
 
-  createTable: function(tableName, options, callback) {
-    log.verbose('creating table:', tableName);
-    var columnSpecs = options,
-        tableOptions = {};
-
-    if (options.columns !== undefined) {
-      columnSpecs = options.columns;
-      delete options.columns;
-      tableOptions = options;
-    }
-
-    var ifNotExistsSql = "";
-    if(tableOptions.ifNotExists) {
-      ifNotExistsSql = "IF NOT EXISTS";
-    }
-
-    var primaryKeyColumns = [];
-    var columnDefOptions = {
-      emitPrimaryKey: false
-    };
-
-    for (var columnName in columnSpecs) {
-      var columnSpec = this.normalizeColumnSpec(columnSpecs[columnName]);
-      columnSpecs[columnName] = columnSpec;
-      if (columnSpec.primaryKey) {
-        primaryKeyColumns.push(columnName);
-      }
-    }
-
-    var pkSql = '';
-    if (primaryKeyColumns.length > 1) {
-      pkSql = util.format(', PRIMARY KEY (`%s`)', primaryKeyColumns.join('`, `'));
-    } else {
-      columnDefOptions.emitPrimaryKey = true;
-    }
-
-    var columnDefs = [];
-    var foreignKeys = [];
-
-    for (var columnName in columnSpecs) {
-      var columnSpec = columnSpecs[columnName];
-      var constraint = this.createColumnDef(columnName, columnSpec, columnDefOptions, tableName);
-
-      columnDefs.push(constraint.constraints);
-      if (constraint.foreignKey)
-        foreignKeys.push(constraint.foreignKey);
-    }
-
-    var sql = util.format('CREATE TABLE %s `%s` (%s%s)', ifNotExistsSql, tableName, columnDefs.join(', '), pkSql);
-
-    return this.runSql(sql)
-    .then(function()
-    {
-
-        return this.recurseCallbackArray(foreignKeys);
-    }.bind(this)).nodeify(callback);
-  },
 
   renameTable: function(tableName, newTableName, callback) {
     var sql = util.format('RENAME TABLE `%s` TO `%s`', tableName, newTableName);
     return this.runSql(sql).nodeify(callback);
-  },
-
-  addColumn: function(tableName, columnName, columnSpec, callback) {
-    var def = this.createColumnDef(columnName, this.normalizeColumnSpec(columnSpec), {}, tableName);
-    var sql = util.format('ALTER TABLE `%s` ADD COLUMN %s', tableName, def.constraints);
-    this.runSql(sql)
-    .then(function()
-    {
-      if(def.foreignKey)
-        return def.foreignKey();
-      else
-        return Promise.resolve();
-    }).nodeify(callback);
   },
 
   createDatabase: function(dbName, options, callback) {
@@ -287,35 +226,26 @@ var MysqlDriver = Base.extend({
     if (!Array.isArray(columns)) {
       columns = [columns];
     }
-    var sql = util.format('ALTER TABLE `%s` ADD %s INDEX `%s` (`%s`)', tableName, (unique ? 'UNIQUE ' : ''), indexName, columns.join('`, `'));
-    return this.runSql(sql).nodeify(callback);
-  },
 
-  insert: function(tableName, columnNameArray, valueArray, callback) {
-    if (columnNameArray.length !== valueArray.length) {
-      return callback(new Error('The number of columns does not match the number of values.'));
+    var columnsList = [];
+    for (var columnIndex in columns) {
+      var column = columns[columnIndex];
+      var columnSpec = '';
+
+      if (typeof(column) === 'object' && column.name) {
+        columnSpec = util.format('`%s`%s',
+                column.name,
+                (column.length ? util.format('(%s)', parseInt(column.length)) : '')
+        );
+      } else if (typeof(column) === 'string') {
+        columnSpec = util.format('`%s`', column);
+      } else
+        return callback(new Error('Invalid column specification'));
+
+      columnsList.push(columnSpec);
     }
 
-    var sql = util.format('INSERT INTO `%s` ', tableName);
-    var columnNames = '(';
-    var values = 'VALUES (';
-
-    for (var index in columnNameArray) {
-      columnNames += '`' + columnNameArray[index] + '`';
-
-      if (typeof(valueArray[index]) === 'string') {
-        values += "'" + this.escape(valueArray[index]) + "'";
-      } else {
-        values += valueArray[index];
-      }
-
-      if (index != columnNameArray.length - 1) {
-        columnNames += ",";
-        values +=  ",";
-      }
-    }
-
-    sql += columnNames + ') '+ values + ');';
+    var sql = util.format('ALTER TABLE `%s` ADD %s INDEX `%s` (%s)', tableName, (unique ? 'UNIQUE ' : ''), indexName, columnsList.join(', '));
     return this.runSql(sql).nodeify(callback);
   },
 
@@ -331,21 +261,6 @@ var MysqlDriver = Base.extend({
     }
 
     var sql = util.format('DROP INDEX `%s` ON `%s`', indexName, tableName);
-
-    return this.runSql(sql).nodeify(callback);
-  },
-
-  dropTable: function(tableName, options, callback) {
-    if (arguments.length < 3) {
-      callback = options;
-      options = {};
-    }
-
-    var ifExistsSql = '';
-    if (options.ifExists) {
-      ifExistsSql = 'IF EXISTS';
-    }
-    var sql = util.format('DROP TABLE %s `%s`', ifExistsSql, tableName);
 
     return this.runSql(sql).nodeify(callback);
   },
@@ -463,6 +378,9 @@ var MysqlDriver = Base.extend({
 
   all: function() {
     var args = this._makeParamArgs(arguments);
+
+    log.sql.apply(null, arguments);
+
     return this.connection.query.apply(this.connection, args);
   },
 
@@ -480,12 +398,19 @@ var MysqlDriver = Base.extend({
 
 Promise.promisifyAll(MysqlDriver);
 
+function dummy() {
+
+  arguments[arguments.length - 1]('not implemented');
+}
+
 exports.connect = function(config, intern, callback) {
   var db;
 
   internals = intern;
   log = internals.mod.log;
   type = internals.mod.type;
+
+  internals.interfaces.SeederInterface._makeParamArgs = dummy;
 
   if (typeof(mysql.createConnection) === 'undefined') {
     db = config.db || new mysql.createClient(config);
