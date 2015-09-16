@@ -399,19 +399,12 @@ var MysqlDriver = Base.extend({
 
 Promise.promisifyAll(MysqlDriver);
 
-function dummy() {
-
-  arguments[arguments.length - 1]('not implemented');
-}
-
 exports.connect = function(config, intern, callback) {
   var db;
 
   internals = intern;
   log = intern.mod.log;
   type = intern.mod.type;
-
-  intern.interfaces.SeederInterface._makeParamArgs = dummy;
 
   if (typeof(mysql.createConnection) === 'undefined') {
     db = config.db || new mysql.createClient(config);
