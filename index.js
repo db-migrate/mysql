@@ -9,19 +9,18 @@ var type;
 var internals = {};
 
 var MysqlDriver = Base.extend({
-  init: function(connection, internals) {
+  init: function(connection) {
     this._escapeDDL = '`';
     this._escapeString = '\'';
     this._super(internals);
     this.connection = connection;
-    this.internals = internals;
   },
 
   startMigration: function(cb){
 
     var self = this;
 
-    if(!this.internals.notransactions) {
+    if(!internals.notransactions) {
 
       return this.runSql('SET AUTOCOMMIT=0;')
              .then(function() {
@@ -35,7 +34,7 @@ var MysqlDriver = Base.extend({
 
   endMigration: function(cb){
 
-    if(!this.internals.notransactions) {
+    if(!internals.notransactions) {
 
       return this.runSql('COMMIT;').nodeify(cb);
     }
@@ -303,12 +302,12 @@ var MysqlDriver = Base.extend({
 
   addMigrationRecord: function (name, callback) {
     var formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
-    this.runSql('INSERT INTO `' + this.internals.migrationTable + '` (`name`, `run_on`) VALUES (?, ?)', [name, formattedDate], callback);
+    this.runSql('INSERT INTO `' + internals.migrationTable + '` (`name`, `run_on`) VALUES (?, ?)', [name, formattedDate], callback);
   },
 
   addSeedRecord: function (name, callback) {
     var formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
-    this.runSql('INSERT INTO `' + this.internals.seedTable + '` (`name`, `run_on`) VALUES (?, ?)', [name, formattedDate], callback);
+    this.runSql('INSERT INTO `' + internals.seedTable + '` (`name`, `run_on`) VALUES (?, ?)', [name, formattedDate], callback);
   },
 
   addForeignKey: function(tableName, referencedTableName, keyName, fieldMapping, rules, callback) {
@@ -353,7 +352,7 @@ var MysqlDriver = Base.extend({
 
     var callback = args.pop();
     log.sql.apply(null, arguments);
-    if(this.internals.dryRun) {
+    if(internals.dryRun) {
       return Promise.resolve().nodeify(callback);
     }
 
@@ -399,17 +398,32 @@ var MysqlDriver = Base.extend({
 
 Promise.promisifyAll(MysqlDriver);
 
+function dummy() {
+
+  arguments[arguments.length - 1]('not implemented');
+}
+
 exports.connect = function(config, intern, callback) {
   var db;
 
   internals = intern;
-  log = intern.mod.log;
-  type = intern.mod.type;
+  log = internals.mod.log;
+  type = internals.mod.type;
+
+  internals.interfaces.SeederInterface._makeParamArgs = dummy;
 
   if (typeof(mysql.createConnection) === 'undefined') {
     db = config.db || new mysql.createClient(config);
   } else {
     db = config.db || new mysql.createConnection(config);
   }
-  callback(null, new MysqlDriver(db, internals));
+
+  db.connect(function( err ) {
+
+    if( err ) {
+      return callback( err );
+    }
+
+    callback(null, new MysqlDriver(db));
+  } );
 };
