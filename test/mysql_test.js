@@ -48,6 +48,7 @@ vows.describe('mysql').addBatch({
         dt: dataType.DATE_TIME,
         ts: dataType.TIMESTAMP,
         bin: dataType.BINARY,
+        dec: { type: 'decimal', precision: 8, scale: 2 },
         bl: { type: dataType.BOOLEAN, defaultValue: false },
         ct: { type: dataType.DATE_TIME, length: 3, defaultValue: 'CURRENT_TIMESTAMP(3)', onUpdate: 'CURRENT_TIMESTAMP(3)' }
       }, this.callback);
@@ -85,7 +86,7 @@ vows.describe('mysql').addBatch({
 
       'with 11 columns': function(err, columns) {
         assert.isNotNull(columns);
-        assert.equal(columns.length, 11);
+        assert.equal(columns.length, 12);
       },
 
       'that has integer id column that is primary key, non-nullable, and auto increments': function(err, columns) {
@@ -161,6 +162,13 @@ vows.describe('mysql').addBatch({
         var column = findByName(columns, 'ct');
         assert.equal(column.getDataType(), 'DATETIME');
         assert.equal(column.meta.extra, 'on update CURRENT_TIMESTAMP')
+      },
+
+      'that has decimal dec column': function(err, columns) {
+        var column = findByName(columns, 'dec');
+        assert.equal(column.getDataType(), 'DECIMAL');
+        assert.equal(column.meta.numeric_precision, 8);
+        assert.equal(column.meta.numeric_scale, 2);
       }
 
     }

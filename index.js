@@ -81,7 +81,12 @@ var MysqlDriver = Base.extend({
     var escapedName = util.format('`%s`', name),
         t = this.mapDataType(spec),
         len;
-    if(spec.type !== type.TEXT && spec.type !== type.BLOB) {
+    if(spec.type === type.DECIMAL) {
+       if(spec.precision && spec.scale){
+         len = '(' + spec.precision + ',' + spec.scale + ')';
+       }
+    }
+    else if(spec.type !== type.TEXT && spec.type !== type.BLOB) {
       len = spec.length ? util.format('(%s)', spec.length) : '';
       if (t === 'VARCHAR' && len === '') {
         len = '(255)';
