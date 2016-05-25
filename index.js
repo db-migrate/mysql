@@ -187,11 +187,11 @@ var MysqlDriver = Base.extend({
     if(typeof(options) === 'object')
     {
       if(typeof(options.database) === 'string')
-        this.runSql(util.format('USE `%s`', options.database), callback);
+        this.all(util.format('USE `%s`', options.database), callback);
     }
     else if(typeof(options) === 'string')
     {
-      this.runSql(util.format('USE `%s`', options), callback);
+      this.all(util.format('USE `%s`', options), callback);
     }
     else
       callback(null);
