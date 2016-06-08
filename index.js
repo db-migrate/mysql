@@ -387,7 +387,7 @@ var MysqlDriver = Base.extend({
   close: function(callback) {
     return Promise.fromCallback(function(callback) {
       return this.connection.end(callback);
-    }).bind(this).asCallback(callback);
+    }.bind(this)).asCallback(callback);
   }
 
 });
