@@ -4,7 +4,7 @@
   "description": "db-migrate mysql driver",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node node_modules/.bin/vows"
   },
   "repository": {
     "type": "git",
@@ -30,5 +30,10 @@
     "db-migrate-base": "^1.2.5",
     "moment": "^2.11.2",
     "mysql": "^2.10.2"
+  },
+  "devDependencies": {
+    "db-meta": "^0.4.1",
+    "db-migrate-shared": "^1.1.2",
+    "vows": "0.8.0"
   }
 }
