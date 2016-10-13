@@ -187,6 +187,7 @@ var MysqlDriver = Base.extend({
     if(typeof(options) === 'object')
     {
       if(typeof(options.database) === 'string')
+
         this.all(util.format('USE `%s`', options.database), callback);
     }
     else if(typeof(options) === 'string')
@@ -250,7 +251,8 @@ var MysqlDriver = Base.extend({
   },
 
   removeIndex: function(tableName, indexName, callback) {
-    // tableName is optional for other drivers, but required for mySql. So, check the args to ensure they are valid
+    // tableName is optional for other drivers, but required for mySql.
+    // So, check the args to ensure they are valid
     if (arguments.length === 2 && typeof(indexName) === 'function') {
       callback = indexName;
       process.nextTick(function () {
@@ -290,14 +292,16 @@ var MysqlDriver = Base.extend({
           return constraint.foreignKey();
         else
           return Promise.resolve();
-      }).nodeify(callback);
+      });
     }.bind(this);
 
     if(columnSpec.unique === false)
       return this.removeIndex(tableName, columnName)
-      .then(exec);
+      .then(function() {
+        return exec();
+      }).nodeify(callback);
     else
-      return exec();
+      return exec().nodeify(callback);
   },
 
   addMigrationRecord: function (name, callback) {
@@ -325,22 +329,27 @@ var MysqlDriver = Base.extend({
   },
 
   removeForeignKey: function(tableName, keyName, options, callback) {
-    var sql = util.format('ALTER TABLE `%s` DROP FOREIGN KEY `%s`', tableName, keyName);
+    var sql = util.format('ALTER TABLE `%s` DROP FOREIGN KEY `%s`', tableName,
+      keyName);
+
+    if(typeof(options) === 'function') {
+
+      callback = options;
+    }
 
     return this.runSql(sql)
     .then(function () {
 
-      if( typeof(options) === 'function' ) {
+      if(typeof(options) === 'object' && options.dropIndex === true) {
 
-          return Promise.resolve().nodeify(options);
-      }
-      else if(options.dropIndex === true) {
-
-        sql = util.format('ALTER TABLE `%s` DROP INDEX `%s`', tableName, keyName);
+        sql = util.format('ALTER TABLE `%s` DROP INDEX `%s`',
+          tableName, keyName);
         return this.runSql(sql);
       }
-      else
-        return Promise.resolve().nodeify(callback);
+      else {
+
+        return Promise.resolve();
+      }
 
     }.bind(this)).nodeify(callback);
   },
@@ -385,9 +394,13 @@ var MysqlDriver = Base.extend({
   },
 
   close: function(callback) {
-    return Promise.fromCallback(function(callback) {
-      return this.connection.end(callback);
-    }.bind(this)).asCallback(callback);
+    return new Promise(function(resolve, reject) {
+      var cb = (function(err, data) {
+        return (err ? reject(err) : resolve(data));
+      });
+
+      this.connection.end(cb);
+    }.bind(this)).nodeify(callback);
   }
 
 });
