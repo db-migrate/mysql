@@ -340,7 +340,7 @@ var MysqlDriver = Base.extend({
     return this.runSql(sql)
     .then(function () {
 
-      if(typeof(options) === 'object' && options.dropIndex === true) {
+      if(options && options.dropIndex === true) {
 
         sql = util.format('ALTER TABLE `%s` DROP INDEX `%s`',
           tableName, keyName);
