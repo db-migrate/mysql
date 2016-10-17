@@ -106,10 +106,8 @@ var MysqlDriver = Base.extend({
       }
     }
 
-    if(spec.primaryKey || spec.unique) {
-      if (spec.autoIncrement) {
-        constraint.push('AUTO_INCREMENT');
-      }
+    if (spec.autoIncrement) {
+      constraint.push('AUTO_INCREMENT');
     }
 
     if (spec.notNull === true) {
