@@ -277,6 +277,81 @@ var MysqlDriver = Base.extend({
     }).nodeify(callback);
   },
 
+  createTable: function(tableName, options, callback) {
+    log.verbose('creating table:', tableName);
+    var columnSpecs = options;
+    var tableOptions = {};
+
+    if (options.columns !== undefined) {
+      columnSpecs = options.columns;
+      delete options.columns;
+      tableOptions = options;
+    }
+
+    var ifNotExistsSql = "";
+    if(tableOptions.ifNotExists) {
+      ifNotExistsSql = "IF NOT EXISTS";
+    }
+
+    var engineSql = '';
+    if (tableOptions.engine && typeof(tableOptions.engine) === 'string') {
+      engineSql = 'ENGINE=\'' + tableOptions.engine + '\'';
+    }
+
+    var collateSql = '';
+    if (tableOptions.collate && typeof(tableOptions.collate) === 'string') {
+      collateSql = 'COLLATE=\'' + tableOptions.collate + '\'';
+    }
+
+    var charsetSql = '';
+    if (tableOptions.charset && typeof(tableOptions.charset) === 'string') {
+      charsetSql = 'CHARSET=\'' + tableOptions.charset + '\'';
+    }
+
+    var primaryKeyColumns = [];
+    var columnDefOptions = {
+      emitPrimaryKey: false
+    };
+
+    for (var columnName in columnSpecs) {
+      var columnSpec = this.normalizeColumnSpec(columnSpecs[columnName]);
+      columnSpecs[columnName] = columnSpec;
+      if (columnSpec.primaryKey) {
+        primaryKeyColumns.push(columnName);
+      }
+    }
+
+    var pkSql = '';
+    if (primaryKeyColumns.length > 1) {
+      pkSql = util.format(', PRIMARY KEY (%s)',
+        this.quoteDDLArr(primaryKeyColumns).join(', '));
+
+    } else {
+      columnDefOptions.emitPrimaryKey = true;
+    }
+
+    var columnDefs = [];
+    var foreignKeys = [];
+
+    for (var columnName in columnSpecs) {
+      var columnSpec = columnSpecs[columnName];
+      var constraint = this.createColumnDef(columnName, columnSpec, columnDefOptions, tableName);
+
+      columnDefs.push(constraint.constraints);
+      if (constraint.foreignKey)
+        foreignKeys.push(constraint.foreignKey);
+    }
+
+    var sql = util.format('CREATE TABLE %s %s (%s%s) %s %s %s', ifNotExistsSql,
+      this.escapeDDL(tableName), columnDefs.join(', '), pkSql, engineSql, charsetSql, collateSql);
+
+    return this.runSql(sql)
+    .then(function()
+    {
+        return this.recurseCallbackArray(foreignKeys);
+    }.bind(this)).nodeify(callback);
+  },
+
   changeColumn: function(tableName, columnName, columnSpec, callback) {
     var constraint = this.createColumnDef(columnName, columnSpec);
     var sql = util.format('ALTER TABLE `%s` CHANGE COLUMN `%s` %s', tableName, columnName, constraint.constraints);
