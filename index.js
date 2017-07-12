@@ -419,12 +419,13 @@ exports.connect = function(config, intern, callback) {
   type = internals.mod.type;
 
   internals.interfaces.SeederInterface._makeParamArgs = dummy;
-  if( config.hasOwnProperty("ssl") && config.ssl.hasOwnProperty("path") && config.ssl.path ){
+  if( config.ssl ){
     var keys = Object.keys(config.ssl);
     for(var i=0 ; i < keys.length ; i++ ){
       var key = keys[i];
-      if( key !== "path" ){
-        config.ssl[key] = fs.readFileSync(config.ssl[key]);
+      var value = config.ssl[key];
+      if( value instanceof Object && value.path){
+          config.ssl[key] = fs.readFileSync(value.path);
       }
     }
   }
