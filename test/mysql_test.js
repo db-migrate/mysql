@@ -48,7 +48,8 @@ vows.describe('mysql').addBatch({
         dt: dataType.DATE_TIME,
         ts: dataType.TIMESTAMP,
         bin: dataType.BINARY,
-        bl: { type: dataType.BOOLEAN, defaultValue: false }
+        bl: { type: dataType.BOOLEAN, defaultValue: false },
+        ct: { type: dataType.DATE_TIME, length: 3, defaultValue: 'CURRENT_TIMESTAMP(3)', onUpdate: 'CURRENT_TIMESTAMP(3)' }
       }, this.callback);
     },
 
@@ -82,9 +83,9 @@ vows.describe('mysql').addBatch({
         }.bind(this));
       },
 
-      'with 10 columns': function(err, columns) {
+      'with 11 columns': function(err, columns) {
         assert.isNotNull(columns);
-        assert.equal(columns.length, 10);
+        assert.equal(columns.length, 11);
       },
 
       'that has integer id column that is primary key, non-nullable, and auto increments': function(err, columns) {
@@ -148,7 +149,20 @@ vows.describe('mysql').addBatch({
         assert.equal(column.getDataType(), 'TINYINT');
         assert.equal(column.isNullable(), true);
         assert.equal(column.getDefaultValue(), 0);
+      },
+
+      'that has ct column with current timestamp with precision 3 as defaultValue': function(err, columns) {
+        var column = findByName(columns, 'ct');
+        assert.equal(column.getDataType(), 'DATETIME');
+        assert.equal(column.getDefaultValue(), 'CURRENT_TIMESTAMP(3)');
+      },
+
+      'that has ct column with current timestamp with as onUpdate value': function(err, columns) {
+        var column = findByName(columns, 'ct');
+        assert.equal(column.getDataType(), 'DATETIME');
+        assert.equal(column.meta.extra, 'on update CURRENT_TIMESTAMP')
       }
+
     }
   }
 }).addBatch({
