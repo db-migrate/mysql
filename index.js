@@ -126,8 +126,8 @@ var MysqlDriver = Base.extend({
       constraint.push('ROW_FORMAT=\'' + spec.rowFormat + '\'')
     }
 
-    if (spec.onUpdate && spec.onUpdate === 'CURRENT_TIMESTAMP') {
-      constraint.push('ON UPDATE CURRENT_TIMESTAMP')
+    if (spec.onUpdate && spec.onUpdate.startsWith('CURRENT_TIMESTAMP')) {
+      constraint.push('ON UPDATE ' + spec.onUpdate)
     }
 
     if (spec.null || spec.notNull === false) {
@@ -138,7 +138,7 @@ var MysqlDriver = Base.extend({
       constraint.push('DEFAULT');
 
       if (typeof spec.defaultValue === 'string'){
-        if(spec.defaultValue === 'CURRENT_TIMESTAMP') {
+        if(spec.defaultValue.startsWith('CURRENT_TIMESTAMP')) {
           constraint.push(spec.defaultValue);
         }
         else {
