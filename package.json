@@ -1,6 +1,6 @@
 {
-  "name": "db-migrate-mysql",
-  "version": "1.1.10",
+  "name": "@malots/mysql",
+  "version": "1.0.0",
   "description": "db-migrate mysql driver",
   "main": "index.js",
   "scripts": {
@@ -19,12 +19,12 @@
     "database",
     "driver"
   ],
-  "author": "Tobias Gurtzick <magic@wizardtales.com>",
+  "author": "leovene <vene@malots.net>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/db-migrate/mysql/issues"
+    "url": "https://github.com/malots/mysql/issues"
   },
-  "homepage": "https://github.com/db-migrate/mysql",
+  "homepage": "https://github.com/malots/mysql",
   "dependencies": {
     "bluebird": "^3.2.1",
     "db-migrate-base": "^1.2.5",
@@ -34,6 +34,7 @@
   "devDependencies": {
     "db-meta": "^0.4.1",
     "db-migrate-shared": "^1.1.2",
-    "vows": "0.8.0"
+    "standard": "^12.0.1",
+    "vows": "^0.8.2"
   }
 }
