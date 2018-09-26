@@ -28,3 +28,7 @@ node_modules
 .lock-wscript
 
 test/db.config.json
+
+#ides
+.vscode/
+.idea/
