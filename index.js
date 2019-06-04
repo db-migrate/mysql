@@ -73,7 +73,7 @@ var MysqlDriver = Base.extend({
         return 'TINYBLOB';
       case type.BOOLEAN:
         return 'TINYINT(1)';
-      case type.JSON:
+      case 'json':
         return 'JSON';
     }
     return this._super(spec.type);
