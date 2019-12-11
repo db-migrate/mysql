@@ -153,6 +153,10 @@ var MysqlDriver = Base.extend({
       }
     }
 
+    if (spec.comment) {
+        constraint.push('COMMENT \'' + spec.comment + '\'')
+    }
+
     if (spec.foreignKey) {
 
       cb = this.bindForeignKey(tableName, columnName, spec.foreignKey);
