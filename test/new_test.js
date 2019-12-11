@@ -269,7 +269,7 @@ lab.experiment('mysql', () => {
     });
   });
 
-  lab.experiment('addColumn', () => {
+  lab.experiment('removeColumn', () => {
     let columns;
 
     lab.before(async () => {
@@ -278,20 +278,514 @@ lab.experiment('mysql', () => {
           type: dataType.INTEGER,
           primaryKey: true,
           autoIncrement: true
-        }
+        },
+        title: { type: dataType.STRING }
       });
-      await db.addColumn('event', 'title', 'string');
+      await db.removeColumn('event', 'title');
+      columns = await meta.getColumnsAsync('event');
+    });
+
+    lab.after(() => db.dropTable('event'));
+    lab.test('without title column', () => {
+      expect(columns).to.exist();
+      expect(columns.length).to.equal(1);
+      expect(columns[0].getName()).to.not.equal('title');
+    });
+  });
+
+  lab.experiment('renameColumn', () => {
+    let columns;
+
+    lab.before(async () => {
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: { type: dataType.STRING }
+      });
+      await db.renameColumn('event', 'title', 'new_title');
       columns = await meta.getColumnsAsync('event');
     });
 
     lab.after(() => db.dropTable('event'));
 
-    lab.test('with additional title column', () => {
+    lab.test('with renamed title column', () => {
       expect(columns).to.exist();
       expect(columns.length).to.equal(2);
-      const column = findByName(columns, 'title');
-      expect(column.getName()).to.equal('title');
-      expect(column.getDataType()).to.equal('VARCHAR');
+      const column = findByName(columns, 'new_title');
+      expect(column).to.exist();
+      expect(column.getName()).to.equal('new_title');
+    });
+  });
+
+  lab.experiment('changeColumn', () => {
+    let columns;
+
+    lab.before(async () => {
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        txt: {
+          type: dataType.STRING,
+          notNull: true,
+          defaultValue: 'foo',
+          unique: true
+        },
+        keep_id: { type: dataType.INTEGER, notNull: false, unique: true }
+      });
+
+      await db.changeColumn('event', 'txt', {
+        type: dataType.STRING,
+        notNull: false,
+        unique: false,
+        defaultValue: 'foo2'
+      });
+      await db.changeColumn('event', 'keep_id', {
+        type: dataType.INTEGER,
+        notNull: true,
+        unsigned: true
+      });
+      columns = await meta.getColumnsAsync('event');
+    });
+
+    lab.after(() => db.dropTable('event'));
+
+    lab.test('with changed title column', () => {
+      expect(columns).to.exist();
+      expect(columns.length).to.equal(3);
+      let column = findByName(columns, 'txt');
+      expect(column.getName()).to.equal('txt');
+      expect(column.isNullable()).to.equal(true);
+      expect(column.getDefaultValue()).to.equal("'foo2'");
+      expect(column.isUnique()).to.equal(false);
+
+      column = findByName(columns, 'keep_id');
+      expect(column.getName()).to.equal('keep_id');
+      expect(column.isNullable()).to.equal(false);
+      expect(column.isUnique()).to.equal(true);
+    });
+  });
+
+  lab.experiment('addIndex', () => {
+    let tables;
+    let indexes;
+
+    lab.before(async () => {
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: { type: dataType.STRING }
+      });
+
+      await db.addIndex('event', 'event_title', 'title');
+      await db.addIndex('event', 'event_title_sub_part', {
+        name: 'title',
+        length: 8
+      });
+      tables = await meta.getTablesAsync();
+      indexes = await meta.getIndexesAsync('event');
+    });
+
+    lab.after(() => db.dropTable('event'));
+
+    lab.test('preserves case of the functions original table', () => {
+      expect(tables).to.exist();
+      expect(tables.length).to.equal(1);
+      expect(tables[0].getName()).to.equal('event');
+    });
+
+    lab.test('has table with additional indexes', () => {
+      expect(indexes).to.exist();
+      expect(indexes.length).to.equal(3);
+
+      const index = findByName(indexes, 'event_title');
+      expect(index.getName()).to.equal('event_title');
+      expect(index.getTableName()).to.equal('event');
+      expect(index.getColumnName()).to.equal('title');
+
+      const indexSubpart = findByName(indexes, 'event_title_sub_part');
+      expect(indexSubpart.getName()).to.equal('event_title_sub_part');
+      expect(indexSubpart.getTableName()).to.equal('event');
+      expect(indexSubpart.getColumnName()).to.equal('title');
+      expect(indexSubpart.meta.sub_part).to.equal(8);
+    });
+  });
+
+  lab.experiment('columnForeignKeySpec', () => {
+    let rows;
+
+    lab.before(async () => {
+      await db.createTable('event_type', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: { type: dataType.STRING }
+      });
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        event_id: {
+          type: dataType.INTEGER,
+          notNull: true,
+          foreignKey: {
+            name: 'fk_event_event_type',
+            table: 'event_type',
+            mapping: 'id',
+            rules: {
+              onDelete: 'CASCADE'
+            }
+          }
+        },
+        title: {
+          type: dataType.STRING
+        }
+      });
+
+      const metaQuery = [
+        'SELECT',
+        '  usg.REFERENCED_TABLE_NAME,',
+        '  usg.REFERENCED_COLUMN_NAME,',
+        '    cstr.UPDATE_RULE,',
+        '  cstr.DELETE_RULE',
+        'FROM',
+        '  `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE` AS usg',
+        'INNER JOIN',
+        '  `INFORMATION_SCHEMA`.`REFERENTIAL_CONSTRAINTS` AS cstr',
+        '    ON  cstr.CONSTRAINT_SCHEMA = usg.TABLE_SCHEMA',
+        '    AND cstr.CONSTRAINT_NAME = usg.CONSTRAINT_NAME',
+        'WHERE',
+        '  usg.TABLE_SCHEMA = ?',
+        '  AND usg.TABLE_NAME = ?',
+        '  AND usg.COLUMN_NAME = ?'
+      ].join('\n');
+
+      rows = await db.runSql(metaQuery, dbName, 'event', 'event_id');
+    });
+
+    lab.after(async () => {
+      await db.dropTable('event');
+      await db.dropTable('event_type');
+    });
+
+    lab.experiment('sets usage and constraints', () => {
+      lab.test('with correct references', () => {
+        expect(rows).to.exist();
+        expect(rows.length).to.equal(1);
+        var row = rows[0];
+        expect(row.REFERENCED_TABLE_NAME).to.equal('event_type');
+        expect(row.REFERENCED_COLUMN_NAME).to.equal('id');
+      });
+
+      lab.test('and correct rules', () => {
+        expect(rows).to.exist();
+        expect(rows.length).to.equal(1);
+        var row = rows[0];
+        expect(row.UPDATE_RULE).to.equal('NO ACTION');
+        expect(row.DELETE_RULE).to.equal('CASCADE');
+      });
+    });
+  });
+
+  lab.experiment('explicitColumnForeignKeySpec', () => {
+    let rows;
+
+    lab.before(async () => {
+      await db.createTable('event_type', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: { type: dataType.STRING }
+      });
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        event_id: {
+          type: dataType.INTEGER,
+          notNull: true,
+          foreignKey: {
+            name: 'fk_event_event_type',
+            table: 'event_type',
+            mapping: 'id',
+            rules: {
+              onDelete: 'CASCADE'
+            }
+          }
+        },
+        event_id2: {
+          type: dataType.INTEGER,
+          notNull: true,
+          foreignKey: {
+            name: 'fk_event_event2_type',
+            table: 'event_type',
+            mapping: 'id',
+            rules: {
+              onDelete: 'CASCADE'
+            }
+          }
+        },
+        title: {
+          type: dataType.STRING
+        }
+      });
+
+      const metaQuery = [
+        'SELECT',
+        '  usg.REFERENCED_TABLE_NAME,',
+        '  usg.REFERENCED_COLUMN_NAME,',
+        '    cstr.UPDATE_RULE,',
+        '  cstr.DELETE_RULE',
+        'FROM',
+        '  `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE` AS usg',
+        'INNER JOIN',
+        '  `INFORMATION_SCHEMA`.`REFERENTIAL_CONSTRAINTS` AS cstr',
+        '    ON  cstr.CONSTRAINT_SCHEMA = usg.TABLE_SCHEMA',
+        '    AND cstr.CONSTRAINT_NAME = usg.CONSTRAINT_NAME',
+        'WHERE',
+        '  usg.TABLE_SCHEMA = ?',
+        '  AND usg.TABLE_NAME = ?',
+        '  AND ( usg.COLUMN_NAME = ? OR usg.COLUMN_NAME = ? )'
+      ].join('\n');
+
+      rows = await db.runSql(
+        metaQuery,
+        dbName,
+        'event',
+        'event_id',
+        'event_id2'
+      );
+    });
+
+    lab.after(async () => {
+      await db.dropTable('event');
+      await db.dropTable('event_type');
+    });
+
+    lab.experiment('sets usage and constraints', () => {
+      lab.test('with correct references', () => {
+        expect(rows).to.exist();
+        expect(rows.length).to.equal(2);
+        var row = rows[0];
+        expect(row.REFERENCED_TABLE_NAME).to.equal('event_type');
+        expect(row.REFERENCED_COLUMN_NAME).to.equal('id');
+
+        var row = rows[1];
+        expect(row.REFERENCED_TABLE_NAME).to.equal('event_type');
+        expect(row.REFERENCED_COLUMN_NAME).to.equal('id');
+        var row = rows[1];
+        expect(row.UPDATE_RULE).to.equal('NO ACTION');
+        expect(row.DELETE_RULE).to.equal('CASCADE');
+      });
+
+      lab.test('and correct rules', () => {
+        expect(rows).to.exist();
+        expect(rows.length).to.equal(2);
+        var row = rows[0];
+        expect(row.UPDATE_RULE).to.equal('NO ACTION');
+        expect(row.DELETE_RULE).to.equal('CASCADE');
+
+        var row = rows[1];
+        expect(row.REFERENCED_TABLE_NAME).to.equal('event_type');
+        expect(row.REFERENCED_COLUMN_NAME).to.equal('id');
+        var row = rows[1];
+        expect(row.UPDATE_RULE).to.equal('NO ACTION');
+        expect(row.DELETE_RULE).to.equal('CASCADE');
+      });
+    });
+  });
+
+  lab.experiment('addForeignKey', () => {
+    let rows;
+
+    lab.before(async () => {
+      await db.createTable('event_type', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: { type: dataType.STRING }
+      });
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        event_id: {
+          type: dataType.INTEGER,
+          notNull: true
+        },
+        title: {
+          type: dataType.STRING
+        }
+      });
+      await db.addForeignKey(
+        'event',
+        'event_type',
+        'fk_event_event_type',
+        {
+          event_id: 'id'
+        },
+        {
+          onDelete: 'CASCADE'
+        }
+      );
+
+      const metaQuery = [
+        'SELECT',
+        '  usg.REFERENCED_TABLE_NAME,',
+        '  usg.REFERENCED_COLUMN_NAME,',
+        '    cstr.UPDATE_RULE,',
+        '  cstr.DELETE_RULE',
+        'FROM',
+        '  `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE` AS usg',
+        'INNER JOIN',
+        '  `INFORMATION_SCHEMA`.`REFERENTIAL_CONSTRAINTS` AS cstr',
+        '    ON  cstr.CONSTRAINT_SCHEMA = usg.TABLE_SCHEMA',
+        '    AND cstr.CONSTRAINT_NAME = usg.CONSTRAINT_NAME',
+        'WHERE',
+        '  usg.TABLE_SCHEMA = ?',
+        '  AND usg.TABLE_NAME = ?',
+        '  AND usg.COLUMN_NAME = ?'
+      ].join('\n');
+
+      rows = await db.runSql(metaQuery, dbName, 'event', 'event_id');
+    });
+
+    lab.after(async () => {
+      await db.dropTable('event');
+      await db.dropTable('event_type');
+    });
+
+    lab.experiment('sets usage and constraints', () => {
+      lab.test('with correct references', () => {
+        expect(rows).to.exist();
+        expect(rows.length).to.equal(1);
+        var row = rows[0];
+        expect(row.REFERENCED_TABLE_NAME).to.equal('event_type');
+        expect(row.REFERENCED_COLUMN_NAME).to.equal('id');
+      });
+
+      lab.test('and correct rules', () => {
+        expect(rows).to.exist();
+        expect(rows.length).to.equal(1);
+        var row = rows[0];
+        expect(row.UPDATE_RULE).to.equal('NO ACTION');
+        expect(row.DELETE_RULE).to.equal('CASCADE');
+      });
+    });
+  });
+
+  lab.experiment('removeForeignKey', () => {
+    let rows;
+
+    lab.before(async () => {
+      await db.createTable('event_type', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: { type: dataType.STRING }
+      });
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        event_id: {
+          type: dataType.INTEGER,
+          notNull: true
+        },
+        title: {
+          type: dataType.STRING
+        }
+      });
+      await db.addForeignKey(
+        'event',
+        'event_type',
+        'fk_event_event_type',
+        {
+          event_id: 'id'
+        },
+        {
+          onDelete: 'CASCADE'
+        }
+      );
+      await db.removeForeignKey('event', 'fk_event_event_type');
+
+      const metaQuery = [
+        'SELECT',
+        '  usg.REFERENCED_TABLE_NAME,',
+        '  usg.REFERENCED_COLUMN_NAME,',
+        '    cstr.UPDATE_RULE,',
+        '  cstr.DELETE_RULE',
+        'FROM',
+        '  `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE` AS usg',
+        'INNER JOIN',
+        '  `INFORMATION_SCHEMA`.`REFERENTIAL_CONSTRAINTS` AS cstr',
+        '    ON  cstr.CONSTRAINT_SCHEMA = usg.TABLE_SCHEMA',
+        '    AND cstr.CONSTRAINT_NAME = usg.CONSTRAINT_NAME',
+        'WHERE',
+        '  usg.TABLE_SCHEMA = ?',
+        '  AND usg.TABLE_NAME = ?',
+        '  AND usg.COLUMN_NAME = ?'
+      ].join('\n');
+
+      rows = await db.runSql(metaQuery, dbName, 'event', 'event_id');
+    });
+
+    lab.after(async () => {
+      await db.dropTable('event');
+      await db.dropTable('event_type');
+    });
+
+    lab.experiment('sets usage and constraints', () => {
+      lab.test('removes usage and constraints', () => {
+        expect(rows).to.exist();
+        expect(rows.length).to.equal(0);
+      });
+    });
+  });
+
+  lab.experiment('runSql', () => {
+    lab.test('accepts vararg parameters', async () => {
+      const data = await db.runSql('SELECT 1 = ?, 2 = ?', 1, 2);
+      expect(data.length).to.equal(1);
+    });
+    lab.test('accepts array parameters', async () => {
+      const data = await db.runSql('SELECT 1 = ?, 2 = ?', [1, 2]);
+      expect(data.length).to.equal(1);
+    });
+  });
+
+  lab.experiment('all', () => {
+    lab.test('accepts vararg parameters', async () => {
+      const data = await Promise.promisify(db.all.bind(db))(
+        'SELECT 1 = ?, 2 = ?',
+        1,
+        2
+      );
+      expect(data.length).to.equal(1);
     });
   });
 

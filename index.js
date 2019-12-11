@@ -431,7 +431,8 @@ var MysqlDriver = Base.extend({
   _makeParamArgs: function (args) {
     var params = Array.prototype.slice.call(args);
     var sql = params.shift();
-    var callback = params.pop();
+    var callback =
+      typeof params[params.length - 1] === 'function' ? params.pop() : null;
 
     if (params.length > 0 && Array.isArray(params[0])) {
       params = params[0];

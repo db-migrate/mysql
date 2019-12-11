@@ -197,7 +197,10 @@ vows
         ) {
           var column = findByName(columns, 'ct');
           assert.equal(column.getDataType().toUpperCase(), 'DATETIME');
-          assert.equal(column.getDefaultValue().toUpperCase(), 'CURRENT_TIMESTAMP(3)');
+          assert.equal(
+            column.getDefaultValue().toUpperCase(),
+            'CURRENT_TIMESTAMP(3)'
+          );
         },
 
         'that has ct column with current timestamp with as onUpdate value': function (
@@ -206,7 +209,10 @@ vows
         ) {
           var column = findByName(columns, 'ct');
           assert.equal(column.getDataType().toUpperCase(), 'DATETIME');
-          assert.equal(column.meta.extra.toUpperCase(), 'ON UPDATE CURRENT_TIMESTAMP(3)');
+          assert.equal(
+            column.meta.extra.toUpperCase(),
+            'ON UPDATE CURRENT_TIMESTAMP(3)'
+          );
         },
 
         'that has decimal dec column': function (err, columns) {
