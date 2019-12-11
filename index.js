@@ -156,7 +156,7 @@ var MysqlDriver = Base.extend({
     }
 
     if (spec.comment) {
-      constraint.push("COMMENT '" + spec.comment + "'");
+      constraint.push(`COMMENT '${spec.comment}`);
     }
 
     if (spec.foreignKey) {
@@ -331,9 +331,9 @@ var MysqlDriver = Base.extend({
   addMigrationRecord: function (name, callback) {
     var formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
     this.runSql(
-      'INSERT INTO ' +
+      'INSERT INTO `' +
         internals.migrationTable +
-        ' (`name`, `run_on`) VALUES (?, ?)',
+        '` (`name`, `run_on`) VALUES (?, ?)',
       [name, formattedDate],
       callback
     );
@@ -342,9 +342,9 @@ var MysqlDriver = Base.extend({
   addSeedRecord: function (name, callback) {
     var formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
     this.runSql(
-      'INSERT INTO ' +
+      'INSERT INTO `' +
         internals.seedTable +
-        ' (`name`, `run_on`) VALUES (?, ?)',
+        '` (`name`, `run_on`) VALUES (?, ?)',
       [name, formattedDate],
       callback
     );
