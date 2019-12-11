@@ -109,7 +109,7 @@ lab.experiment('mysql', () => {
         () => {
           const column = findByName(columns, 'str');
           expect(column.getDataType()).to.equal('VARCHAR');
-          expect(column.getDefaultValue()).to.equal("'foo'");
+          expect(column.getDefaultValue()).to.equal('foo');
           expect(column.isUnique()).to.equal(true);
         }
       );
@@ -361,7 +361,7 @@ lab.experiment('mysql', () => {
       let column = findByName(columns, 'txt');
       expect(column.getName()).to.equal('txt');
       expect(column.isNullable()).to.equal(true);
-      expect(column.getDefaultValue()).to.equal("'foo2'");
+      expect(column.getDefaultValue()).to.equal('foo2');
       expect(column.isUnique()).to.equal(false);
 
       column = findByName(columns, 'keep_id');
