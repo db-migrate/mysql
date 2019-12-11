@@ -29,18 +29,18 @@ cache:
   directories:
     - node_modules
 
-dist: precise
-
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
     packages:
       - g++-4.8
-  mariadb: "10.4"
 
 before_install:
   - export CXX=g++-4.8; export CC=gcc-4.8;
+
+services:
+  - mysql
 
 before_script:
   - mysql -e "create database db_migrate_test;"
