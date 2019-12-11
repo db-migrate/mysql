@@ -370,9 +370,9 @@ var MysqlDriver = Base.extend({
       'ALTER TABLE `%s` ADD CONSTRAINT `%s` FOREIGN KEY (%s) REFERENCES `%s` (%s) ON DELETE %s ON UPDATE %s',
       tableName,
       keyName,
-      this.quoteDDLArr(columns),
+      this.quoteDDLArr(columns).join(', '),
       referencedTableName,
-      this.quoteDDLArr(referencedColumns),
+      this.quoteDDLArr(referencedColumns).join(', '),
       rules.onDelete || 'NO ACTION',
       rules.onUpdate || 'NO ACTION'
     );
