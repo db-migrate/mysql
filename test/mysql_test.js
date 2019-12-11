@@ -118,7 +118,7 @@ lab.experiment('mysql', () => {
         'that has text strDefaultNull column that has a default null value',
         () => {
           const column = findByName(columns, 'strDefaultNull');
-          expect(column.getDefaultValue().toUpperCase()).to.equal('NULL');
+          expect(column.getDefaultValue()).to.equal(null);
         }
       );
 
