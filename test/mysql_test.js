@@ -499,7 +499,11 @@ vows
               unique: false,
               defaultValue: 'foo2'
             };
-            var spec2 = { type: dataType.INTEGER, notNull: true, unsigned: true };
+            var spec2 = {
+              type: dataType.INTEGER,
+              notNull: true,
+              unsigned: true
+            };
 
             db.changeColumn(
               'event',
