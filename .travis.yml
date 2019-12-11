@@ -44,5 +44,4 @@ services:
 
 before_script:
   - sudo mysql -e "create database db_migrate_test;"
-  - sudo createdb db_migrate_test
   - cp test/db.config.ci test/db.config.json
