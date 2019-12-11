@@ -1,9 +1,9 @@
 language: node_js
 
 node_js:
-  - 4
-  - 5
-  - 6
+  - 8
+  - 10
+  - 12
 
 notifications:
   email:
@@ -35,12 +35,12 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - g++-4.8
-  mariadb: "10.0"
+  mariadb: "10.1"
 
 before_install:
   - export CXX=g++-4.8; export CC=gcc-4.8;
 
 before_script:
-    - mysql -e "create database db_migrate_test;"
-    - createdb db_migrate_test
-    - cp test/db.config.ci test/db.config.json
+  - mysql -e "create database db_migrate_test;"
+  - createdb db_migrate_test
+  - cp test/db.config.ci test/db.config.json
