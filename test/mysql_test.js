@@ -1,3 +1,5 @@
+const Code = require('@hapi/code');
+const Lab = require('@hapi/lab');
 var vows = require('vows');
 var assert = require('assert');
 var dbmeta = require('db-meta');
