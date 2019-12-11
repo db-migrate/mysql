@@ -123,14 +123,6 @@ var MysqlDriver = Base.extend({
       constraint.push('UNIQUE');
     }
 
-    if (spec.engine && typeof spec.engine === 'string') {
-      constraint.push("ENGINE='" + spec.engine + "'");
-    }
-
-    if (spec.rowFormat && typeof spec.rowFormat === 'string') {
-      constraint.push("ROW_FORMAT='" + spec.rowFormat + "'");
-    }
-
     if (spec.onUpdate && spec.onUpdate.startsWith('CURRENT_TIMESTAMP')) {
       constraint.push('ON UPDATE ' + spec.onUpdate);
     }
@@ -156,7 +148,7 @@ var MysqlDriver = Base.extend({
     }
 
     if (spec.comment) {
-      constraint.push(`COMMENT '${spec.comment}`);
+      constraint.push(`COMMENT '${spec.comment}'`);
     }
 
     if (spec.foreignKey) {
@@ -169,6 +161,33 @@ var MysqlDriver = Base.extend({
   renameTable: function (tableName, newTableName, callback) {
     var sql = util.format('RENAME TABLE `%s` TO `%s`', tableName, newTableName);
     return this.runSql(sql).nodeify(callback);
+  },
+
+  _applyTableOtions: function (spec, tableName) {
+    const tableOpts = [];
+
+    // if there is no columns in the options object
+    // it means it was a default payload without table options
+    if (!spec.columns) return '';
+
+    if (spec.engine && typeof spec.engine === 'string') {
+      tableOpts.push(`ENGINE='${spec.engine}'`);
+    }
+
+    if (spec.rowFormat && typeof spec.rowFormat === 'string') {
+      tableOpts.push(`ROW_FORMAT='${spec.rowFormat}'`);
+    }
+
+    if (spec.collate && typeof spec.collate === 'string') {
+      tableOpts.push(`COLLATE='${spec.collate}'`);
+    }
+
+    var charsetSql = '';
+    if (spec.charset && typeof spec.charset === 'string') {
+      tableOpts.push(`CHARSET='${spec.charset}'`);
+    }
+
+    return tableOpts.join(' ');
   },
 
   createDatabase: function (dbName, options, callback) {

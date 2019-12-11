@@ -59,7 +59,12 @@ lab.experiment('mysql', () => {
           primaryKey: true,
           autoIncrement: true
         },
-        str: { type: dataType.STRING, unique: true, defaultValue: 'foo' },
+        str: {
+          type: dataType.STRING,
+          unique: true,
+          defaultValue: 'foo',
+          comment: 'foo'
+        },
         strDefaultNull: { type: dataType.STRING, defaultValue: null },
         txt: { type: dataType.TEXT, notNull: true },
         intg: dataType.INTEGER,
@@ -89,7 +94,7 @@ lab.experiment('mysql', () => {
 
       lab.before(async () => (columns = await meta.getColumnsAsync('event')));
 
-      lab.test('with 11 columns', async () => {
+      lab.test('with 12 columns', async () => {
         expect(columns).to.exist();
         expect(columns.length).to.equal(12);
       });
@@ -192,6 +197,11 @@ lab.experiment('mysql', () => {
         expect(column.getDataType().toUpperCase()).to.equal('DECIMAL');
         expect(column.meta.numeric_precision).to.equal(8);
         expect(column.meta.numeric_scale).to.equal(2);
+      });
+
+      lab.test('that has foo comment', () => {
+        const column = findByName(columns, 'str');
+        expect(column.meta.column_comment).to.equal('foo');
       });
     });
 
