@@ -188,7 +188,9 @@ var MysqlDriver = Base.extend({
 
   switchDatabase: function (options, callback) {
     if (typeof options === 'object') {
-      if (typeof options.database === 'string') { this.all(util.format('USE `%s`', options.database), callback); }
+      if (typeof options.database === 'string') {
+        this.all(util.format('USE `%s`', options.database), callback);
+      }
     } else if (typeof options === 'string') {
       this.all(util.format('USE `%s`', options), callback);
     } else callback(null);
