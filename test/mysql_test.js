@@ -128,7 +128,7 @@ vows
         ) {
           var column = findByName(columns, 'str');
           assert.equal(column.getDataType(), 'VARCHAR');
-          assert.equal(column.getDefaultValue(), 'foo');
+          assert.equal(column.getDefaultValue(), "'foo'");
           //        assert.equal(column.isUnique(), true);
         },
 
@@ -137,7 +137,7 @@ vows
           columns
         ) {
           var column = findByName(columns, 'strDefaultNull');
-          assert.equal(column.getDefaultValue(), null);
+          assert.equal(column.getDefaultValue().toUpperCase(), 'NULL');
         },
 
         'that has text txt column that is non-nullable': function (
@@ -194,8 +194,8 @@ vows
           columns
         ) {
           var column = findByName(columns, 'ct');
-          assert.equal(column.getDataType(), 'DATETIME');
-          assert.equal(column.getDefaultValue(), 'CURRENT_TIMESTAMP(3)');
+          assert.equal(column.getDataType().toUpperCase(), 'DATETIME');
+          assert.equal(column.getDefaultValue().toUpperCase(), 'CURRENT_TIMESTAMP(3)');
         },
 
         'that has ct column with current timestamp with as onUpdate value': function (
@@ -203,13 +203,13 @@ vows
           columns
         ) {
           var column = findByName(columns, 'ct');
-          assert.equal(column.getDataType(), 'DATETIME');
-          assert.equal(column.meta.extra, 'on update CURRENT_TIMESTAMP');
+          assert.equal(column.getDataType().toUpperCase(), 'DATETIME');
+          assert.equal(column.meta.extra.toUpperCase(), 'ON UPDATE CURRENT_TIMESTAMP(3)');
         },
 
         'that has decimal dec column': function (err, columns) {
           var column = findByName(columns, 'dec');
-          assert.equal(column.getDataType(), 'DECIMAL');
+          assert.equal(column.getDataType().toUpperCase(), 'DECIMAL');
           assert.equal(column.meta.numeric_precision, 8);
           assert.equal(column.meta.numeric_scale, 2);
         }
@@ -546,7 +546,7 @@ vows
           var column = findByName(columns, 'txt');
           assert.equal(column.getName(), 'txt');
           assert.equal(column.isNullable(), true);
-          assert.equal(column.getDefaultValue(), 'foo2');
+          assert.equal(column.getDefaultValue(), "'foo2'");
           assert.equal(column.isUnique(), false);
 
           column = findByName(columns, 'keep_id');
