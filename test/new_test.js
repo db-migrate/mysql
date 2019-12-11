@@ -484,7 +484,7 @@ lab.experiment('mysql', () => {
       lab.test('with correct references', () => {
         expect(rows).to.exist();
         expect(rows.length).to.equal(1);
-        var row = rows[0];
+        const row = rows[0];
         expect(row.REFERENCED_TABLE_NAME).to.equal('event_type');
         expect(row.REFERENCED_COLUMN_NAME).to.equal('id');
       });
@@ -492,7 +492,7 @@ lab.experiment('mysql', () => {
       lab.test('and correct rules', () => {
         expect(rows).to.exist();
         expect(rows.length).to.equal(1);
-        var row = rows[0];
+        const row = rows[0];
         expect(row.UPDATE_RULE).to.equal('NO ACTION');
         expect(row.DELETE_RULE).to.equal('CASCADE');
       });
@@ -582,14 +582,14 @@ lab.experiment('mysql', () => {
       lab.test('with correct references', () => {
         expect(rows).to.exist();
         expect(rows.length).to.equal(2);
-        var row = rows[0];
+        let row = rows[0];
         expect(row.REFERENCED_TABLE_NAME).to.equal('event_type');
         expect(row.REFERENCED_COLUMN_NAME).to.equal('id');
 
-        var row = rows[1];
+        row = rows[1];
         expect(row.REFERENCED_TABLE_NAME).to.equal('event_type');
         expect(row.REFERENCED_COLUMN_NAME).to.equal('id');
-        var row = rows[1];
+        row = rows[1];
         expect(row.UPDATE_RULE).to.equal('NO ACTION');
         expect(row.DELETE_RULE).to.equal('CASCADE');
       });
@@ -597,14 +597,14 @@ lab.experiment('mysql', () => {
       lab.test('and correct rules', () => {
         expect(rows).to.exist();
         expect(rows.length).to.equal(2);
-        var row = rows[0];
+        let row = rows[0];
         expect(row.UPDATE_RULE).to.equal('NO ACTION');
         expect(row.DELETE_RULE).to.equal('CASCADE');
 
-        var row = rows[1];
+        row = rows[1];
         expect(row.REFERENCED_TABLE_NAME).to.equal('event_type');
         expect(row.REFERENCED_COLUMN_NAME).to.equal('id');
-        var row = rows[1];
+        row = rows[1];
         expect(row.UPDATE_RULE).to.equal('NO ACTION');
         expect(row.DELETE_RULE).to.equal('CASCADE');
       });
@@ -679,7 +679,7 @@ lab.experiment('mysql', () => {
       lab.test('with correct references', () => {
         expect(rows).to.exist();
         expect(rows.length).to.equal(1);
-        var row = rows[0];
+        const row = rows[0];
         expect(row.REFERENCED_TABLE_NAME).to.equal('event_type');
         expect(row.REFERENCED_COLUMN_NAME).to.equal('id');
       });
@@ -687,7 +687,7 @@ lab.experiment('mysql', () => {
       lab.test('and correct rules', () => {
         expect(rows).to.exist();
         expect(rows.length).to.equal(1);
-        var row = rows[0];
+        const row = rows[0];
         expect(row.UPDATE_RULE).to.equal('NO ACTION');
         expect(row.DELETE_RULE).to.equal('CASCADE');
       });
@@ -768,7 +768,7 @@ lab.experiment('mysql', () => {
   });
 
   lab.experiment('runSql', () => {
-    lab.test('accepts vararg parameters', async () => {
+    lab.test('accepts letarg parameters', async () => {
       const data = await db.runSql('SELECT 1 = ?, 2 = ?', 1, 2);
       expect(data.length).to.equal(1);
     });
@@ -779,13 +779,142 @@ lab.experiment('mysql', () => {
   });
 
   lab.experiment('all', () => {
-    lab.test('accepts vararg parameters', async () => {
+    lab.test('accepts letarg parameters', async () => {
       const data = await Promise.promisify(db.all.bind(db))(
         'SELECT 1 = ?, 2 = ?',
         1,
         2
       );
       expect(data.length).to.equal(1);
+    });
+  });
+
+  lab.experiment('insert', () => {
+    lab.before(async () => {
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: { type: dataType.STRING }
+      });
+
+      await db.insert('event', ['id', 'title'], [2, 'title']);
+    });
+
+    lab.after(() => db.dropTable('event'));
+
+    lab.test('with additional row', async () => {
+      const data = await db.runSql('SELECT * from event');
+      expect(data.length).to.equal(1);
+    });
+  });
+
+  lab.experiment('insertWithSingleQuotes', () => {
+    lab.before(async () => {
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: { type: dataType.STRING }
+      });
+
+      await db.insert('event', ['id', 'title'], [2, "Bill's Mother's House"]);
+    });
+
+    lab.after(() => db.dropTable('event'));
+
+    lab.test('with additional row', async () => {
+      const data = await db.runSql('SELECT * from event');
+      expect(data.length).to.equal(1);
+    });
+  });
+
+  lab.experiment('addIndex', () => {
+    let indexes;
+
+    lab.before(async () => {
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: { type: dataType.STRING }
+      });
+
+      await db.addIndex('event', 'event_title', 'title');
+      await db.removeIndex('event', 'event_title');
+      indexes = await meta.getIndexesAsync('event');
+    });
+
+    lab.after(() => db.dropTable('event'));
+
+    lab.test('has table without index', () => {
+      expect(indexes).to.exist();
+      expect(indexes.length).to.equal(1); // first index is primary key
+    });
+  });
+
+  lab.experiment('removeIndexInvalidArgs', () => {
+    lab.before(async () => {
+      await db.createTable('event', {
+        id: {
+          type: dataType.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: { type: dataType.STRING }
+      });
+
+      await db.addIndex('event', 'event_title', 'title');
+    });
+
+    lab.after(() => db.dropTable('event'));
+
+    lab.test('removeIndex has errored', async () => {
+      const err = await expect(db.removeIndex('event_title')).to.reject(
+        Error,
+        'Illegal arguments, must provide "tableName" and "indexName"'
+      );
+      expect(err).to.exist();
+    });
+  });
+
+  lab.experiment('createMigrationsTable', () => {
+    let tables;
+    let columns;
+
+    lab.before(async () => {
+      await Promise.promisify(db.createMigrationsTable.bind(db))();
+
+      columns = await meta.getColumnsAsync('migrations');
+      tables = await meta.getTablesAsync();
+    });
+
+    lab.after(() => db.dropTable('migrations'));
+
+    lab.test('has migrations table', () => {
+      expect(tables).to.exist();
+      expect(tables.length).to.equal(1);
+      expect(tables[0].getName()).to.equal('migrations');
+    });
+
+    lab.test('with names', () => {
+      expect(columns).to.exist();
+      expect(columns.length).to.equal(3);
+      var column = findByName(columns, 'id');
+      expect(column.getName()).to.equal('id');
+      expect(column.getDataType()).to.equal('INT');
+      column = findByName(columns, 'name');
+      expect(column.getName()).to.equal('name');
+      expect(column.getDataType()).to.equal('VARCHAR');
+      column = findByName(columns, 'run_on');
+      expect(column.getName()).to.equal('run_on');
+      expect(column.getDataType()).to.equal('DATETIME');
     });
   });
 

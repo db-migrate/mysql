@@ -261,17 +261,22 @@ var MysqlDriver = Base.extend({
   removeIndex: function (tableName, indexName, callback) {
     // tableName is optional for other drivers, but required for mySql.
     // So, check the args to ensure they are valid
-    if (arguments.length === 2 && typeof indexName === 'function') {
+    if (
+      arguments.length === 1 ||
+      (arguments.length === 2 && typeof indexName === 'function')
+    ) {
       callback = indexName;
-      process.nextTick(function () {
-        callback(
-          new Error(
-            'Illegal arguments, must provide "tableName" and "indexName"'
-          )
-        );
-      });
+      const err = new Error(
+        'Illegal arguments, must provide "tableName" and "indexName"'
+      );
 
-      return;
+      if (typeof indexName === 'function') {
+        process.nextTick(function () {
+          callback(err);
+        });
+      }
+
+      return Promise.reject(err);
     }
 
     var sql = util.format('DROP INDEX `%s` ON `%s`', indexName, tableName);
