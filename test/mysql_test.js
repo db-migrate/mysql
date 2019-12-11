@@ -928,5 +928,69 @@ lab.experiment('mysql', () => {
     });
   });
 
+  lab.experiment('createTableWithOptions', () => {
+    let tables;
+    lab.before(async () => {
+      await db.createTable('event', {
+        columns: {
+          id: {
+            type: dataType.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+          }
+        },
+        engine: 'myisam',
+        collate: 'latin1_swedish_ci',
+        rowFormat: 'FIXED'
+      });
+      tables = await meta.getTablesAsync();
+    });
+
+    lab.test('has table metadata containing the event table', async () => {
+      expect(tables.length).to.equal(1);
+      expect(tables[0].getName()).to.equal('event');
+    });
+
+    lab.test('has table options set successfully', async () => {
+      expect(tables[0].meta.engine.toLowerCase()).to.equal('myisam');
+      expect(tables[0].meta.row_format.toLowerCase()).to.equal('fixed');
+      expect(tables[0].meta.table_collation.toLowerCase()).to.equal(
+        'latin1_swedish_ci'
+      );
+    });
+
+    lab.after(() => db.dropTable('event'));
+  });
+
+  lab.experiment('createTableWithCharset', () => {
+    let tables;
+    lab.before(async () => {
+      await db.createTable('event', {
+        columns: {
+          id: {
+            type: dataType.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+          }
+        },
+        charset: 'utf8'
+      });
+      tables = await meta.getTablesAsync();
+    });
+
+    lab.test('has table metadata containing the event table', async () => {
+      expect(tables.length).to.equal(1);
+      expect(tables[0].getName()).to.equal('event');
+    });
+
+    lab.test('has table charset set successfully', async () => {
+      expect(tables[0].meta.table_collation.toLowerCase()).to.equal(
+        'utf8_general_ci'
+      );
+    });
+
+    lab.after(() => db.dropTable('event'));
+  });
+
   lab.after(() => db.close());
 });

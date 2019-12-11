@@ -163,7 +163,7 @@ var MysqlDriver = Base.extend({
     return this.runSql(sql).nodeify(callback);
   },
 
-  _applyTableOtions: function (spec, tableName) {
+  _applyTableOptions: function (spec, tableName) {
     const tableOpts = [];
 
     // if there is no columns in the options object
@@ -171,20 +171,19 @@ var MysqlDriver = Base.extend({
     if (!spec.columns) return '';
 
     if (spec.engine && typeof spec.engine === 'string') {
-      tableOpts.push(`ENGINE='${spec.engine}'`);
+      tableOpts.push(`ENGINE ${spec.engine}`);
     }
 
     if (spec.rowFormat && typeof spec.rowFormat === 'string') {
-      tableOpts.push(`ROW_FORMAT='${spec.rowFormat}'`);
+      tableOpts.push(`ROW_FORMAT ${spec.rowFormat}`);
     }
 
     if (spec.collate && typeof spec.collate === 'string') {
-      tableOpts.push(`COLLATE='${spec.collate}'`);
+      tableOpts.push(`COLLATE '${spec.collate}'`);
     }
 
-    var charsetSql = '';
     if (spec.charset && typeof spec.charset === 'string') {
-      tableOpts.push(`CHARSET='${spec.charset}'`);
+      tableOpts.push(`CHARACTER SET ${spec.charset}`);
     }
 
     return tableOpts.join(' ');
