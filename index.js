@@ -148,7 +148,7 @@ var MysqlDriver = Base.extend({
     }
 
     if (spec.comment) {
-      constraint.push(`COMMENT '${spec.comment}'`);
+      constraint.push(`COMMENT '${spec.comment.replace(/'/g, "\\\'")}'`);
     }
 
     if (spec.foreignKey) {

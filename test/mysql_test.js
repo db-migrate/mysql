@@ -63,7 +63,7 @@ lab.experiment('mysql', () => {
           type: dataType.STRING,
           unique: true,
           defaultValue: 'foo',
-          comment: 'foo'
+          comment: 'l\'apostrophe sur l\'eau'
         },
         strDefaultNull: { type: dataType.STRING, defaultValue: null },
         txt: { type: dataType.TEXT, notNull: true },
@@ -199,9 +199,9 @@ lab.experiment('mysql', () => {
         expect(column.meta.numeric_scale).to.equal(2);
       });
 
-      lab.test('that has foo comment', () => {
+      lab.test('that has l\'apostrophe sur l\'eau comment', () => {
         const column = findByName(columns, 'str');
-        expect(column.meta.column_comment).to.equal('foo');
+        expect(column.meta.column_comment).to.equal('l\'apostrophe sur l\'eau');
       });
     });
 
