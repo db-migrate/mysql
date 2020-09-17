@@ -1,6 +1,6 @@
 var util = require('util');
 var moment = require('moment');
-var mysql = require('mysql');
+var mysql = require('mysql2');
 var Base = require('db-migrate-base');
 var Promise = require('bluebird');
 var log;
@@ -486,7 +486,7 @@ var MysqlDriver = Base.extend({
 
 Promise.promisifyAll(MysqlDriver);
 
-function dummy () {
+function dummy() {
   arguments[arguments.length - 1]('not implemented');
 }
 

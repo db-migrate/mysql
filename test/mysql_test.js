@@ -29,6 +29,7 @@ log.silence(true);
 const dbName = config.database;
 let db;
 let meta;
+let isMySQLv8;
 
 const findByName = (columns, name) => {
   for (let i = 0; i < columns.length; i++) {
@@ -48,6 +49,8 @@ lab.experiment('mysql', () => {
     meta = _meta;
 
     db = con;
+
+    isMySQLv8 = parseInt(await meta.getVersionAsync()) == 8;
   });
 
   lab.experiment('createTable', () => {
@@ -154,7 +157,7 @@ lab.experiment('mysql', () => {
       lab.test('that has timestamp ts column', () => {
         const column = findByName(columns, 'ts');
         expect(column.getDataType()).to.equal('TIMESTAMP');
-        expect(column.isNullable()).to.equal(false);
+        expect(column.isNullable()).to.equal(isMySQLv8 ? true : false);
       });
 
       lab.test('that has binary bin column', () => {
@@ -187,7 +190,9 @@ lab.experiment('mysql', () => {
           const column = findByName(columns, 'ct');
           expect(column.getDataType().toUpperCase()).to.equal('DATETIME');
           expect(column.meta.extra.toUpperCase()).to.equal(
-            'ON UPDATE CURRENT_TIMESTAMP(3)'
+            isMySQLv8
+              ? 'DEFAULT_GENERATED ON UPDATE CURRENT_TIMESTAMP(3)'
+              : 'ON UPDATE CURRENT_TIMESTAMP(3)'
           );
         }
       );
