@@ -1,6 +1,7 @@
 var util = require('util');
 var moment = require('moment');
 var mysql = require('mysql');
+var fs = require('fs');
 var Base = require('db-migrate-base');
 var Promise = require('bluebird');
 var log;
@@ -498,6 +499,16 @@ exports.connect = function (config, intern, callback) {
   type = internals.mod.type;
 
   internals.interfaces.SeederInterface._makeParamArgs = dummy;
+  if( config.ssl ){
+    var keys = Object.keys(config.ssl);
+    for(var i=0 ; i < keys.length ; i++ ){
+      var key = keys[i];
+      var value = config.ssl[key];
+      if( value instanceof Object && value.path){
+          config.ssl[key] = fs.readFileSync(value.path);
+      }
+    }
+  }
 
   if (typeof mysql.createConnection === 'undefined') {
     db = config.db || new mysql.createClient(config);
