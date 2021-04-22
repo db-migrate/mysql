@@ -93,7 +93,7 @@ var MysqlDriver = Base.extend({
     );
     return {
       foreignKey: constraint.foreignKey,
-      constraints: [escapedName, t, len, constraint.constraints].join(' ')
+      constraints: [escapedName, t, len, constraint.constraints].join(' '),
     };
   },
 
@@ -145,6 +145,10 @@ var MysqlDriver = Base.extend({
       } else {
         constraint.push(spec.defaultValue);
       }
+    }
+
+    if (spec.after !== undefined) {
+      constraint.push('AFTER ' + spec.after);
     }
 
     if (spec.comment) {
@@ -481,12 +485,12 @@ var MysqlDriver = Base.extend({
         this.connection.end(cb);
       }.bind(this)
     ).nodeify(callback);
-  }
+  },
 });
 
 Promise.promisifyAll(MysqlDriver);
 
-function dummy () {
+function dummy() {
   arguments[arguments.length - 1]('not implemented');
 }
 
