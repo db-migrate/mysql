@@ -8,7 +8,8 @@
     "dev": "nodemon index.js",
     "pretest": "eslint .",
     "test": "lab -t 60",
-    "lintfix": "lint-staged"
+    "lintfix": "lint-staged",
+    "prepare": "husky install"
   },
   "husky": {
     "hooks": {
