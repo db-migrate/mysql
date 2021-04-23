@@ -16,7 +16,11 @@
     }
   },
   "lint-staged": {
-    "*.js": ["pretty-quick --staged", "git update-index", "eslint --fix"]
+    "*.js": [
+      "pretty-quick --staged",
+      "git update-index",
+      "eslint --fix"
+    ]
   },
   "repository": {
     "type": "git",
