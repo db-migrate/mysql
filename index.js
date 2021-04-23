@@ -147,10 +147,6 @@ var MysqlDriver = Base.extend({
       }
     }
 
-    if (spec.before !== undefined) {
-      constraint.push('BEFORE ' + spec.before);
-    }
-
     if (spec.after !== undefined) {
       constraint.push('AFTER ' + spec.after);
     }
