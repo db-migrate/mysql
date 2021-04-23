@@ -29,4 +29,3 @@ node_modules
 
 test/db.config.json
 .tern-port
-.husky
