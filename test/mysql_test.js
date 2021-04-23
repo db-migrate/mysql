@@ -265,6 +265,10 @@ lab.experiment('mysql', () => {
         }
       });
       await db.addColumn('event', 'title', 'string');
+      await db.addColumn('event', 'date', {
+        after: 'id',
+        type: 'datetime'
+      });
       columns = await meta.getColumnsAsync('event');
     });
 
@@ -272,10 +276,13 @@ lab.experiment('mysql', () => {
 
     lab.test('with additional title column', () => {
       expect(columns).to.exist();
-      expect(columns.length).to.equal(2);
+      expect(columns.length).to.equal(3);
       const column = findByName(columns, 'title');
       expect(column.getName()).to.equal('title');
       expect(column.getDataType()).to.equal('VARCHAR');
+
+      // Testing the "after" constraint
+      expect(columns[1].getName()).to.equal('date');
     });
   });
 
