@@ -1,8 +1,7 @@
 {
   "mysql": {
     "database": "db_migrate_test",
-    "user": "root",
-    "driver": "mysql"
+    "user": "root"
   },
   "pg": {
     "driver": "pg",
@@ -13,7 +12,6 @@
     "filename": "test.db"
   },
   "mongodb": {
-    "driver": "mongodb",
     "host": "localhost",
     "database": "db_migrate_test"
   }

@@ -1,14 +1,14 @@
-var util = require('util');
-var moment = require('moment');
-var mysql = require('mysql');
-var Base = require('db-migrate-base');
-var Promise = require('bluebird');
-var log;
-var type;
+const util = require('util');
+const moment = require('moment');
+const mysql = require('mysql2');
+const Base = require('db-migrate-base');
+const Promise = require('bluebird');
+let log;
+let type;
 
-var internals = {};
+let internals = {};
 
-var MysqlDriver = Base.extend({
+const MysqlDriver = Base.extend({
   init: function (connection) {
     this._escapeDDL = '`';
     this._escapeString = "'";
@@ -17,7 +17,7 @@ var MysqlDriver = Base.extend({
   },
 
   startMigration: function (cb) {
-    var self = this;
+    const self = this;
 
     if (!internals.notransactions) {
       return this.runSql('SET AUTOCOMMIT=0;')
@@ -35,7 +35,7 @@ var MysqlDriver = Base.extend({
   },
 
   mapDataType: function (spec) {
-    var len;
+    let len;
     switch (spec.type) {
       case type.TEXT:
         len = parseInt(spec.length, 10) || 1000;
@@ -72,9 +72,9 @@ var MysqlDriver = Base.extend({
   },
 
   createColumnDef: function (name, spec, options, tableName) {
-    var escapedName = util.format('`%s`', name);
-    var t = this.mapDataType(spec);
-    var len;
+    const escapedName = util.format('`%s`', name);
+    const t = this.mapDataType(spec);
+    let len;
     if (spec.type === type.DECIMAL) {
       if (spec.precision && spec.scale) {
         len = '(' + spec.precision + ',' + spec.scale + ')';
@@ -85,7 +85,7 @@ var MysqlDriver = Base.extend({
         len = '(255)';
       }
     }
-    var constraint = this.createColumnConstraint(
+    const constraint = this.createColumnConstraint(
       spec,
       options,
       tableName,
@@ -98,8 +98,8 @@ var MysqlDriver = Base.extend({
   },
 
   createColumnConstraint: function (spec, options, tableName, columnName) {
-    var constraint = [];
-    var cb;
+    const constraint = [];
+    let cb;
 
     if (spec.unsigned) {
       constraint.push('UNSIGNED');
@@ -159,7 +159,11 @@ var MysqlDriver = Base.extend({
   },
 
   renameTable: function (tableName, newTableName, callback) {
-    var sql = util.format('RENAME TABLE `%s` TO `%s`', tableName, newTableName);
+    const sql = util.format(
+      'RENAME TABLE `%s` TO `%s`',
+      tableName,
+      newTableName
+    );
     return this.runSql(sql).nodeify(callback);
   },
 
@@ -190,8 +194,8 @@ var MysqlDriver = Base.extend({
   },
 
   createDatabase: function (dbName, options, callback) {
-    var spec = '';
-    var ifNotExists = '';
+    const spec = '';
+    let ifNotExists = '';
 
     if (typeof options === 'function') callback = options;
     else {
@@ -215,7 +219,7 @@ var MysqlDriver = Base.extend({
   },
 
   dropDatabase: function (dbName, options, callback) {
-    var ifExists = '';
+    let ifExists = '';
 
     if (typeof options === 'function') callback = options;
     else {
@@ -229,7 +233,7 @@ var MysqlDriver = Base.extend({
   },
 
   removeColumn: function (tableName, columnName, callback) {
-    var sql = util.format(
+    const sql = util.format(
       'ALTER TABLE `%s` DROP COLUMN `%s`',
       tableName,
       columnName
@@ -248,10 +252,10 @@ var MysqlDriver = Base.extend({
       columns = [columns];
     }
 
-    var columnsList = [];
-    for (var columnIndex in columns) {
-      var column = columns[columnIndex];
-      var columnSpec = '';
+    const columnsList = [];
+    for (const columnIndex in columns) {
+      const column = columns[columnIndex];
+      let columnSpec = '';
 
       if (typeof column === 'object' && column.name) {
         columnSpec = util.format(
@@ -266,7 +270,7 @@ var MysqlDriver = Base.extend({
       columnsList.push(columnSpec);
     }
 
-    var sql = util.format(
+    const sql = util.format(
       'ALTER TABLE `%s` ADD %s INDEX `%s` (%s)',
       tableName,
       unique ? 'UNIQUE ' : '',
@@ -297,14 +301,14 @@ var MysqlDriver = Base.extend({
       return Promise.reject(err);
     }
 
-    var sql = util.format('DROP INDEX `%s` ON `%s`', indexName, tableName);
+    const sql = util.format('DROP INDEX `%s` ON `%s`', indexName, tableName);
 
     return this.runSql(sql).nodeify(callback);
   },
 
   renameColumn: function (tableName, oldColumnName, newColumnName, callback) {
-    var self = this;
-    var columnTypeSql = util.format(
+    const self = this;
+    const columnTypeSql = util.format(
       "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '%s' AND COLUMN_NAME = '%s'",
       tableName,
       oldColumnName
@@ -312,8 +316,8 @@ var MysqlDriver = Base.extend({
 
     return this.runSql(columnTypeSql)
       .then(function (result) {
-        var columnType = result[0].COLUMN_TYPE;
-        var alterSql = util.format(
+        const columnType = result[0].COLUMN_TYPE;
+        const alterSql = util.format(
           'ALTER TABLE `%s` CHANGE `%s` `%s` %s',
           tableName,
           oldColumnName,
@@ -327,15 +331,15 @@ var MysqlDriver = Base.extend({
   },
 
   changeColumn: function (tableName, columnName, columnSpec, callback) {
-    var constraint = this.createColumnDef(columnName, columnSpec);
-    var sql = util.format(
+    const constraint = this.createColumnDef(columnName, columnSpec);
+    const sql = util.format(
       'ALTER TABLE `%s` CHANGE COLUMN `%s` %s',
       tableName,
       columnName,
       constraint.constraints
     );
 
-    var exec = function () {
+    const exec = function () {
       return this.runSql(sql).then(function () {
         if (constraint.foreignKey) return constraint.foreignKey();
         else return Promise.resolve();
@@ -352,7 +356,7 @@ var MysqlDriver = Base.extend({
   },
 
   addMigrationRecord: function (name, callback) {
-    var formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+    const formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
     this.runSql(
       'INSERT INTO `' +
         internals.migrationTable +
@@ -363,7 +367,7 @@ var MysqlDriver = Base.extend({
   },
 
   addSeedRecord: function (name, callback) {
-    var formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+    const formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
     this.runSql(
       'INSERT INTO `' +
         internals.seedTable +
@@ -385,11 +389,11 @@ var MysqlDriver = Base.extend({
       callback = rules;
       rules = {};
     }
-    var columns = Object.keys(fieldMapping);
-    var referencedColumns = columns.map(function (key) {
+    const columns = Object.keys(fieldMapping);
+    const referencedColumns = columns.map(function (key) {
       return fieldMapping[key];
     });
-    var sql = util.format(
+    const sql = util.format(
       'ALTER TABLE `%s` ADD CONSTRAINT `%s` FOREIGN KEY (%s) REFERENCES `%s` (%s) ON DELETE %s ON UPDATE %s',
       tableName,
       keyName,
@@ -404,7 +408,7 @@ var MysqlDriver = Base.extend({
   },
 
   removeForeignKey: function (tableName, keyName, options, callback) {
-    var sql = util.format(
+    let sql = util.format(
       'ALTER TABLE `%s` DROP FOREIGN KEY `%s`',
       tableName,
       keyName
@@ -433,10 +437,10 @@ var MysqlDriver = Base.extend({
   },
 
   runSql: function () {
-    var self = this;
-    var args = this._makeParamArgs(arguments);
+    const self = this;
+    const args = this._makeParamArgs(arguments);
 
-    var callback = args.pop();
+    const callback = args.pop();
     log.sql.apply(null, arguments);
     if (internals.dryRun) {
       return Promise.resolve().nodeify(callback);
@@ -452,9 +456,9 @@ var MysqlDriver = Base.extend({
   },
 
   _makeParamArgs: function (args) {
-    var params = Array.prototype.slice.call(args);
-    var sql = params.shift();
-    var callback =
+    let params = Array.prototype.slice.call(args);
+    const sql = params.shift();
+    const callback =
       typeof params[params.length - 1] === 'function' ? params.pop() : null;
 
     if (params.length > 0 && Array.isArray(params[0])) {
@@ -464,7 +468,7 @@ var MysqlDriver = Base.extend({
   },
 
   all: function () {
-    var args = this._makeParamArgs(arguments);
+    const args = this._makeParamArgs(arguments);
 
     log.sql.apply(null, arguments);
 
@@ -474,7 +478,7 @@ var MysqlDriver = Base.extend({
   close: function (callback) {
     return new Promise(
       function (resolve, reject) {
-        var cb = function (err, data) {
+        const cb = function (err, data) {
           return err ? reject(err) : resolve(data);
         };
 
@@ -491,7 +495,7 @@ function dummy () {
 }
 
 exports.connect = function (config, intern, callback) {
-  var db;
+  let db;
 
   internals = intern;
   log = internals.mod.log;
@@ -500,9 +504,9 @@ exports.connect = function (config, intern, callback) {
   internals.interfaces.SeederInterface._makeParamArgs = dummy;
 
   if (typeof mysql.createConnection === 'undefined') {
-    db = config.db || new mysql.createClient(config);
+    db = config.db || mysql.createClient(config);
   } else {
-    db = config.db || new mysql.createConnection(config);
+    db = config.db || mysql.createConnection(config);
   }
 
   db.connect(function (err) {
