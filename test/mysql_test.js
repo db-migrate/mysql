@@ -70,7 +70,7 @@ lab.experiment('mysql', () => {
         intg: dataType.INTEGER,
         rel: dataType.REAL,
         dt: dataType.DATE_TIME,
-        ts: dataType.TIMESTAMP,
+        ts: { type: dataType.TIMESTAMP, notNull: true },
         bin: dataType.BINARY,
         dec: { type: 'decimal', precision: 8, scale: 2 },
         bl: { type: dataType.BOOLEAN, defaultValue: false },
