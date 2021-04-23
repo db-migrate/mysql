@@ -147,6 +147,10 @@ const MysqlDriver = Base.extend({
       }
     }
 
+    if (spec.after !== undefined) {
+      constraint.push('AFTER ' + spec.after);
+    }
+
     if (spec.comment) {
       constraint.push(`COMMENT '${spec.comment}'`);
     }
