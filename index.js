@@ -105,6 +105,14 @@ const MysqlDriver = Base.extend({
       constraint.push('UNSIGNED');
     }
 
+    if (spec.characterSet) {
+      constraint.push(`CHARACTER SET ${spec.characterSet}`);
+    }
+
+    if (spec.collation) {
+      constraint.push(`COLLATE ${spec.collation}`);
+    }
+
     if (spec.primaryKey) {
       if (!options || options.emitPrimaryKey) {
         constraint.push('PRIMARY KEY');
