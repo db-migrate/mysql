@@ -106,7 +106,7 @@ const MysqlDriver = Base.extend({
     }
 
     if (spec.primaryKey) {
-      if (!options || options.emitPrimaryKey) {
+      if (!options || Object.keys(options).length === 0 || options.emitPrimaryKey) {
         constraint.push('PRIMARY KEY');
       }
     }
