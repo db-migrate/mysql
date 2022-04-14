@@ -500,6 +500,7 @@ function dummy () {
 
 exports.connect = function (config, intern, callback) {
   let db;
+  delete config.driver;
 
   internals = intern;
   log = internals.mod.log;
