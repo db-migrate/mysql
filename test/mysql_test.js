@@ -263,16 +263,18 @@ lab.experiment('mysql', () => {
 
     lab.before(async () => {
       await db.createTable('event', {
-        id: {
-          type: dataType.INTEGER,
-          primaryKey: true,
-          autoIncrement: true
+        title: {
+          type: dataType.STRING
         }
       });
-      await db.addColumn('event', 'title', 'string');
       await db.addColumn('event', 'date', {
-        after: 'id',
+        after: 'title',
         type: 'datetime'
+      });
+      await db.addColumn('event', 'id', {
+        type: dataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
       });
       columns = await meta.getColumnsAsync('event');
     });
@@ -285,6 +287,8 @@ lab.experiment('mysql', () => {
       const column = findByName(columns, 'title');
       expect(column.getName()).to.equal('title');
       expect(column.getDataType()).to.equal('VARCHAR');
+      const primaryColumn = findByName(columns, 'id');
+      expect(primaryColumn.meta.column_key).to.equal('PRI');
 
       // Testing the "after" constraint
       expect(columns[1].getName()).to.equal('date');
