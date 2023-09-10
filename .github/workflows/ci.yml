@@ -21,6 +21,8 @@ jobs:
         with:
           mysql database: 'db_migrate_test' # Optional, default value is "test". The specified database which will be create
           mysql root password: 'super123' # Required if "mysql user" is empty, default is empty. The root superuser password
+          character set server: 'utf8' # Optional, default value is 'utf8mb4'. The '--character-set-server' option for mysqld
+          collation server: 'utf8_general_ci' # Optional, default value is 'utf8mb4_general_ci'. The '--collation-server' option for mysqld
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
