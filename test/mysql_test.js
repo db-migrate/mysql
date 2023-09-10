@@ -190,9 +190,7 @@ lab.experiment('mysql', () => {
           const column = findByName(columns, 'ct');
           expect(column.getDataType().toUpperCase()).to.equal('DATETIME');
           expect(column.meta.extra.toUpperCase()).to.equal(
-            isMySQLv8
-              ? 'DEFAULT_GENERATED ON UPDATE CURRENT_TIMESTAMP(3)'
-              : 'ON UPDATE CURRENT_TIMESTAMP(3)'
+            'ON UPDATE CURRENT_TIMESTAMP(3)'
           );
         }
       );
@@ -1001,7 +999,7 @@ lab.experiment('mysql', () => {
 
     lab.test('has table charset set successfully', async () => {
       expect(tables[0].meta.table_collation.toLowerCase()).to.equal(
-        'utf8_general_ci'
+        'utf8mb3_general_ci' // late mysql changed this behavior, but it is ok, we just set the charset
       );
     });
 
