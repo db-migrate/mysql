@@ -29,6 +29,5 @@ jobs:
           cache: 'npm'
       - run: npm i -g npm@9.x.x
       - run: npm ci
-      - run: npm i db-migrate@beta
       - run: cp test/db.config.ci test/db.config.json
       - run: npm test
