@@ -289,7 +289,12 @@ lab.experiment('mysql', () => {
       expect(primaryColumn.meta.column_key).to.equal('PRI');
 
       // Testing the "after" constraint
-      expect(columns[1].getName()).to.equal('date');
+      // mysql > 8 does not return the same way anymore,
+      // results may be in random order, so we check explicitly
+      // the element with ordinal position 2
+      expect(
+        columns.find((x) => x.meta.ordinal_position === 2).getName()
+      ).to.equal('date');
     });
   });
 
