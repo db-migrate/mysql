@@ -190,7 +190,7 @@ lab.experiment('mysql', () => {
           const column = findByName(columns, 'ct');
           expect(column.getDataType().toUpperCase()).to.equal('DATETIME');
           expect(column.meta.extra.toUpperCase()).to.equal(
-            'ON UPDATE CURRENT_TIMESTAMP(3)'
+            'DEFAULT_GENERATED ON UPDATE CURRENT_TIMESTAMP(3)'
           );
         }
       );
