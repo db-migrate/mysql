@@ -1,6 +1,6 @@
 {
   "name": "db-migrate-mysql",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "db-migrate mysql driver",
   "main": "index.js",
   "scripts": {
