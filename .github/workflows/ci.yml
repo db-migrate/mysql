@@ -20,7 +20,7 @@ jobs:
       - uses: mirromutth/mysql-action@v1.1
         with:
           mysql database: 'db_migrate_test' # Optional, default value is "test". The specified database which will be create
-          mysql root password: '' # Required if "mysql user" is empty, default is empty. The root superuser password
+          mysql root password: 'super123' # Required if "mysql user" is empty, default is empty. The root superuser password
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3

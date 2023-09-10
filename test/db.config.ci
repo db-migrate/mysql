@@ -2,6 +2,7 @@
   "mysql": {
     "database": "db_migrate_test",
     "user": "root",
+    "password": "super123"
     "driver": "mysql"
   },
   "pg": {
