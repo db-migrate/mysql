@@ -46,7 +46,7 @@
     "bluebird": "^3.7.2",
     "db-migrate-base": "^2.3.0",
     "moment": "^2.28.0",
-    "mysql2": "^2.1.0"
+    "mysql2": "^3.9.7"
   },
   "devDependencies": {
     "@hapi/code": "^7.0.0",
