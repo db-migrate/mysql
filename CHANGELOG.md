@@ -1,3 +1,22 @@
+# [3.1.0](https://github.com/db-migrate/mysql/compare/v3.0.0...v3.1.0) (2026-10-08)
+
+
+### Features
+
+* declare support for the migration lock ([8f76c8d](https://github.com/db-migrate/mysql/commit/8f76c8d7cb3ccba219908b75d419c2adea396ca0))
+
+
+### Upgrade notes
+
+* Requires db-migrate-base 2.4.0. State, migration and seed records are now written
+  with `run_on` set by the database clock instead of the clock of the migrating
+  process. `DATETIME` stores no time zone, so if that process ran in a different
+  time zone than the database session, records written shortly after the upgrade can
+  sort before the last records written before it. This window is as long as the time
+  zone offset.
+
+
+
 # [2.2.0](https://github.com/db-migrate/mysql/compare/v2.1.2...v2.2.0) (2021-09-21)
 
 
