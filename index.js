@@ -323,13 +323,10 @@ const MysqlDriver = Base.extend({
 
   renameColumn: function (tableName, oldColumnName, newColumnName, callback) {
     const self = this;
-    const columnTypeSql = util.format(
-      "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '%s' AND COLUMN_NAME = '%s'",
-      tableName,
-      oldColumnName
-    );
+    const columnTypeSql =
+      'SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?';
 
-    return this.runSql(columnTypeSql)
+    return this.runSql(columnTypeSql, [tableName, oldColumnName])
       .then(function (result) {
         const columnType = result[0].COLUMN_TYPE;
         const alterSql = util.format(
