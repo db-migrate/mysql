@@ -1,5 +1,4 @@
 const util = require('util');
-const moment = require('moment');
 const mysql = require('mysql2');
 const Base = require('db-migrate-base');
 const Promise = require('bluebird');
@@ -114,7 +113,11 @@ const MysqlDriver = Base.extend({
     }
 
     if (spec.primaryKey) {
-      if (!options || Object.keys(options).length === 0 || options.emitPrimaryKey) {
+      if (
+        !options ||
+        Object.keys(options).length === 0 ||
+        options.emitPrimaryKey
+      ) {
         constraint.push('PRIMARY KEY');
       }
     }
@@ -368,23 +371,21 @@ const MysqlDriver = Base.extend({
   },
 
   addMigrationRecord: function (name, callback) {
-    const formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
     this.runSql(
       'INSERT INTO `' +
         internals.migrationTable +
-        '` (`name`, `run_on`) VALUES (?, ?)',
-      [name, formattedDate],
+        '` (`name`, `run_on`) VALUES (?, CURRENT_TIMESTAMP)',
+      [name],
       callback
     );
   },
 
   addSeedRecord: function (name, callback) {
-    const formattedDate = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
     this.runSql(
       'INSERT INTO `' +
         internals.seedTable +
-        '` (`name`, `run_on`) VALUES (?, ?)',
-      [name, formattedDate],
+        '` (`name`, `run_on`) VALUES (?, CURRENT_TIMESTAMP)',
+      [name],
       callback
     );
   },
@@ -497,6 +498,13 @@ const MysqlDriver = Base.extend({
         this.connection.end(cb);
       }.bind(this)
     ).nodeify(callback);
+  },
+
+  _meta: {
+    supports: {
+      // state methods are safe for the migration lock
+      locking: true
+    }
   }
 });
 
