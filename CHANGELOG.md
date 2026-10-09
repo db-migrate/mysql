@@ -1,3 +1,12 @@
+## [3.1.1](https://github.com/db-migrate/mysql/compare/v3.1.0...v3.1.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* all without callback, scope switching and default values ([cdaeb8c](https://github.com/db-migrate/mysql/commit/cdaeb8cdd61e58f9b6dd0834465860c1f1e962df))
+
+
+
 # [3.1.0](https://github.com/db-migrate/mysql/compare/v3.0.0...v3.1.0) (2026-10-08)
 
 
