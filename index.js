@@ -70,6 +70,22 @@ const MysqlDriver = Base.extend({
     return this._super(spec.type);
   },
 
+  _translateSpecialDefaultValues: function (
+    spec,
+    options,
+    tableName,
+    columnName
+  ) {
+    switch (spec.defaultValue.special) {
+      case 'CURRENT_TIMESTAMP':
+        spec.defaultValue.prep = 'CURRENT_TIMESTAMP';
+        break;
+      default:
+        this._super(spec, options, tableName, columnName);
+        break;
+    }
+  },
+
   createColumnDef: function (name, spec, options, tableName) {
     const escapedName = util.format('`%s`', name);
     const t = this.mapDataType(spec);
@@ -153,6 +169,12 @@ const MysqlDriver = Base.extend({
         }
       } else if (spec.defaultValue === null) {
         constraint.push('NULL');
+      } else if (
+        typeof spec.defaultValue === 'object' &&
+        spec.defaultValue.prep !== undefined
+      ) {
+        // a raw or special default value, prepared by _prepareSpec
+        constraint.push(spec.defaultValue.prep);
       } else {
         constraint.push(spec.defaultValue);
       }
@@ -227,6 +249,8 @@ const MysqlDriver = Base.extend({
     if (typeof options === 'object') {
       if (typeof options.database === 'string') {
         this.all(util.format('USE `%s`', options.database), callback);
+      } else {
+        callback(null);
       }
     } else if (typeof options === 'string') {
       this.all(util.format('USE `%s`', options), callback);
@@ -481,11 +505,20 @@ const MysqlDriver = Base.extend({
   },
 
   all: function () {
+    const self = this;
     const args = this._makeParamArgs(arguments);
+    const callback = args.pop();
 
     log.sql.apply(null, arguments);
 
-    return this.connection.query.apply(this.connection, args);
+    // a promise like the other drivers return, also without a callback
+    return new Promise(function (resolve, reject) {
+      args.push(function (err, data) {
+        return err ? reject(err) : resolve(data);
+      });
+
+      self.connection.query.apply(self.connection, args);
+    }).nodeify(callback);
   },
 
   close: function (callback) {
