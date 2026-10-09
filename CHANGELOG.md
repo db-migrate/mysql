@@ -1,3 +1,13 @@
+## [3.2.1](https://github.com/db-migrate/mysql/compare/v3.2.0...v3.2.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* the character set of a table before its collation ([dacbd9e](https://github.com/db-migrate/mysql/commit/dacbd9ecba7a92176e40a0550c118069ac8c5355)), closes [#40](https://github.com/db-migrate/mysql/issues/40)
+* renameColumn keeps the definition of the column ([abd0f3f](https://github.com/db-migrate/mysql/commit/abd0f3fcd2ff8ec19875769503eb9f933fc432ba))
+
+
+
 # [3.2.0](https://github.com/db-migrate/mysql/compare/v3.1.2...v3.2.0) (2026-10-09)
 
 
