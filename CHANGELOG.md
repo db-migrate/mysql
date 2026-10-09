@@ -1,3 +1,13 @@
+## [3.1.2](https://github.com/db-migrate/mysql/compare/v3.1.1...v3.1.2) (2026-10-09)
+
+
+### Bug Fixes
+
+* commit the data of migrations without a transaction ([5d5578a](https://github.com/db-migrate/mysql/commit/5d5578a230c8a1c3c24bdfc82cab5ea7051d3bc4))
+* **deps:** require mysql2 ^3.24.5, fixing GHSA-pmh2-wpjm-fj45, GHSA-3f6p-5ww8-9rcr and GHSA-rgwj-5xj2-c3m3 ([86a1e0c](https://github.com/db-migrate/mysql/commit/86a1e0c9857f1d8a8813fec02c8a2d4b1f1139e8))
+
+
+
 ## [3.1.1](https://github.com/db-migrate/mysql/compare/v3.1.0...v3.1.1) (2026-10-09)
 
 
