@@ -28,8 +28,15 @@ const MysqlDriver = Base.extend({
   },
 
   endMigration: function (cb) {
+    const self = this;
+
     if (!internals.notransactions) {
-      return this.runSql('COMMIT;').nodeify(cb);
+      // autocommit again, for migrations running without a transaction
+      return this.runSql('COMMIT;')
+        .then(function () {
+          return self.runSql('SET AUTOCOMMIT=1;');
+        })
+        .nodeify(cb);
     } else return Promise.resolve(null).nodeify(cb);
   },
 
