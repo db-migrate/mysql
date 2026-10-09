@@ -1,3 +1,17 @@
+# [3.2.0](https://github.com/db-migrate/mysql/compare/v3.1.2...v3.2.0) (2026-10-09)
+
+
+### Bug Fixes
+
+* escape string defaults and column comments ([76805f1](https://github.com/db-migrate/mysql/commit/76805f15173c52ca5d75075df4221f28174a3903))
+
+
+### Features
+
+* insert objects and several rows, with db-migrate-base 2.5.0 ([02e50a1](https://github.com/db-migrate/mysql/commit/02e50a18edb1a392072a81efc5083a3279204ecc))
+
+
+
 ## [3.1.2](https://github.com/db-migrate/mysql/compare/v3.1.1...v3.1.2) (2026-10-09)
 
 
