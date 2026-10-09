@@ -172,7 +172,7 @@ const MysqlDriver = Base.extend({
         if (spec.defaultValue.startsWith('CURRENT_TIMESTAMP')) {
           constraint.push(spec.defaultValue);
         } else {
-          constraint.push("'" + spec.defaultValue + "'");
+          constraint.push(this.escapeString(spec.defaultValue));
         }
       } else if (spec.defaultValue === null) {
         constraint.push('NULL');
@@ -192,7 +192,7 @@ const MysqlDriver = Base.extend({
     }
 
     if (spec.comment) {
-      constraint.push(`COMMENT '${spec.comment}'`);
+      constraint.push('COMMENT ' + this.escapeString(spec.comment));
     }
 
     if (spec.foreignKey) {
