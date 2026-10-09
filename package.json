@@ -44,7 +44,7 @@
   "homepage": "https://github.com/db-migrate/mysql",
   "dependencies": {
     "bluebird": "^3.7.2",
-    "db-migrate-base": "^2.4.0",
+    "db-migrate-base": "^2.4.1",
     "mysql2": "^3.9.7"
   },
   "devDependencies": {
