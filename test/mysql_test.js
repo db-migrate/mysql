@@ -349,6 +349,73 @@ lab.experiment('mysql', () => {
     });
   });
 
+  lab.experiment('renameColumn keeps the definition', () => {
+    const definition = async (column) =>
+      (
+        await db.all(
+          'SELECT IS_NULLABLE n, COLUMN_DEFAULT d, COLUMN_COMMENT c, EXTRA e ' +
+            'FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() ' +
+            `AND TABLE_NAME = 'event' AND COLUMN_NAME = '${column}'`
+        )
+      )[0];
+
+    lab.before(async () => {
+      await db.createTable('event', {
+        id: { type: dataType.INTEGER, primaryKey: true, autoIncrement: true },
+        title: {
+          type: dataType.STRING,
+          notNull: true,
+          defaultValue: 'x',
+          comment: 'the title'
+        }
+      });
+    });
+
+    lab.after(() => db.dropTable('event'));
+
+    lab.test('with RENAME COLUMN', async () => {
+      await db.renameColumn('event', 'title', 'name');
+      await db.renameColumn('event', 'id', 'event_id');
+      expect(await definition('name')).to.equal({
+        n: 'NO',
+        d: 'x',
+        c: 'the title',
+        e: ''
+      });
+      expect((await definition('event_id')).e).to.equal('auto_increment');
+    });
+
+    lab.test('by its full definition, before MySQL 8', async () => {
+      await db._renameColumnByChange('event', 'name', 'label');
+      expect(await definition('label')).to.equal({
+        n: 'NO',
+        d: 'x',
+        c: 'the title',
+        e: ''
+      });
+    });
+  });
+
+  lab.experiment('table options', () => {
+    lab.before(() =>
+      db.createTable('event', {
+        columns: { id: { type: dataType.INTEGER, primaryKey: true } },
+        charset: 'utf8mb4',
+        collate: 'utf8mb4_bin'
+      })
+    );
+
+    lab.after(() => db.dropTable('event'));
+
+    lab.test('keep the collation next to the character set', async () => {
+      const [table] = await db.all(
+        'SELECT TABLE_COLLATION c FROM INFORMATION_SCHEMA.TABLES ' +
+          "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event'"
+      );
+      expect(table.c).to.equal('utf8mb4_bin');
+    });
+  });
+
   lab.experiment('changeColumn', () => {
     let columns;
 

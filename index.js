@@ -353,28 +353,66 @@ const MysqlDriver = Base.extend({
     return this.runSql(sql).nodeify(callback);
   },
 
+  /**
+   * Renames a column and keeps its definition as it is. Servers before
+   * MySQL 8 and MariaDB 10.5 have no RENAME COLUMN, there the column is
+   * changed to its full definition from SHOW CREATE TABLE.
+   */
   renameColumn: function (tableName, oldColumnName, newColumnName, callback) {
-    const self = this;
-    const columnTypeSql = util.format(
-      "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '%s' AND COLUMN_NAME = '%s'",
-      tableName,
-      oldColumnName
-    );
+    if (typeof callback === 'object') {
+      callback = null;
+    }
 
-    return this.runSql(columnTypeSql)
-      .then(function (result) {
-        const columnType = result[0].COLUMN_TYPE;
-        const alterSql = util.format(
-          'ALTER TABLE `%s` CHANGE `%s` `%s` %s',
+    return this.runSql(
+      util.format(
+        'ALTER TABLE `%s` RENAME COLUMN `%s` TO `%s`',
+        tableName,
+        oldColumnName,
+        newColumnName
+      )
+    )
+      .catch((err) => {
+        if (err.code !== 'ER_PARSE_ERROR') {
+          throw err;
+        }
+
+        return this._renameColumnByChange(
           tableName,
           oldColumnName,
-          newColumnName,
-          columnType
+          newColumnName
         );
-
-        return self.runSql(alterSql);
       })
       .nodeify(callback);
+  },
+
+  _renameColumnByChange: function (tableName, oldColumnName, newColumnName) {
+    return this.runSql(util.format('SHOW CREATE TABLE `%s`', tableName)).then(
+      (result) => {
+        const ddl = result[0]['Create Table'];
+        const prefix = '`' + oldColumnName + '` ';
+        const line = ddl
+          .split('\n')
+          .map((l) => l.trim())
+          .find((l) => l.indexOf(prefix) === 0);
+
+        if (!line) {
+          throw new Error(
+            `There is no column "${oldColumnName}" in "${tableName}" to rename`
+          );
+        }
+
+        const definition = line.slice(prefix.length).replace(/,$/, '');
+        return this.runSql(
+          util.format(
+            'ALTER TABLE `%s` CHANGE `%s` `%s` %s',
+            tableName,
+            oldColumnName,
+            newColumnName,
+            definition
+          )
+        );
+      }
+    );
   },
 
   changeColumn: function (tableName, columnName, columnSpec, callback) {
