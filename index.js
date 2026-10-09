@@ -226,12 +226,13 @@ const MysqlDriver = Base.extend({
       tableOpts.push(`ROW_FORMAT ${spec.rowFormat}`);
     }
 
-    if (spec.collate && typeof spec.collate === 'string') {
-      tableOpts.push(`COLLATE '${spec.collate}'`);
-    }
-
+    // the character set first, it resets the collation to its default
     if (spec.charset && typeof spec.charset === 'string') {
       tableOpts.push(`CHARACTER SET ${spec.charset}`);
+    }
+
+    if (spec.collate && typeof spec.collate === 'string') {
+      tableOpts.push(`COLLATE '${spec.collate}'`);
     }
 
     return tableOpts.join(' ');
